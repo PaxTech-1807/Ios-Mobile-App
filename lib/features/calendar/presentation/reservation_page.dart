@@ -345,3 +345,4 @@ class ReservationDetailsPage extends StatelessWidget {
     return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }
+//ESTE ui es solo de prueba, Se tiene que cambiar por completo por lo que hay dentro de los wireflows.
