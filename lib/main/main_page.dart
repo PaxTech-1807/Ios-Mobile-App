@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iosmobileapp/features/calendar/presentation/reservation_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -8,8 +9,25 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+  int selectedIndex = 0;
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      body: SafeArea(child: ReservationPage()),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: selectedIndex,
+        onTap: (value) {
+          setState(() {
+            selectedIndex = value;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'Calendario',
+          )
+        ]
+        ),
+    );
   }
 }
