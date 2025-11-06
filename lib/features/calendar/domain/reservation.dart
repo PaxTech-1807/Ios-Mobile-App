@@ -3,7 +3,7 @@ class Reservation {
 	final int id;
 	final int clientId;
 	final ReservationProvider provider;
-	final PaymentInfo paymentId;
+	final ServiceInfo serviceId;
 	final TimeSlot timeSlot;
 	final Worker workerId;
 
@@ -11,7 +11,7 @@ class Reservation {
 		required this.id,
 		required this.clientId,
 		required this.provider,
-		required this.paymentId,
+		required this.serviceId,
 		required this.timeSlot,
 		required this.workerId,
 	});
@@ -20,7 +20,7 @@ class Reservation {
 				id: json['id'] as int,
 				clientId: json['clientId'] as int,
 				provider: ReservationProvider.fromJson(json['provider'] as Map<String, dynamic>),
-				paymentId: PaymentInfo.fromJson(json['paymentId'] as Map<String, dynamic>),
+				serviceId: ServiceInfo.fromJson(json['serviceId'] as Map<String, dynamic>),
 				timeSlot: TimeSlot.fromJson(json['timeSlot'] as Map<String, dynamic>),
 				workerId: Worker.fromJson(json['workerId'] as Map<String, dynamic>),
 			);
@@ -29,7 +29,7 @@ class Reservation {
 				'id': id,
 				'clientId': clientId,
 				'provider': provider.toJson(),
-				'paymentId': paymentId.toJson(),
+				'serviceId': serviceId.toJson(),
 				'timeSlot': timeSlot.toJson(),
 				'workerId': workerId.toJson(),
 			};
@@ -38,7 +38,7 @@ class Reservation {
 		int? id,
 		int? clientId,
 		ReservationProvider? provider,
-		PaymentInfo? paymentId,
+		ServiceInfo? serviceId,
 		TimeSlot? timeSlot,
 		Worker? workerId,
 	}) {
@@ -46,7 +46,7 @@ class Reservation {
 			id: id ?? this.id,
 			clientId: clientId ?? this.clientId,
 			provider: provider ?? this.provider,
-			paymentId: paymentId ?? this.paymentId,
+			serviceId: serviceId ?? this.serviceId,
 			timeSlot: timeSlot ?? this.timeSlot,
 			workerId: workerId ?? this.workerId,
 		);
@@ -59,13 +59,13 @@ class Reservation {
 				other.id == id &&
 				other.clientId == clientId &&
 				other.provider == provider &&
-				other.paymentId == paymentId &&
+				other.serviceId == serviceId &&
 				other.timeSlot == timeSlot &&
 				other.workerId == workerId;
 	}
 
 	@override
-	int get hashCode => Object.hash(id, clientId, provider, paymentId, timeSlot, workerId);
+	int get hashCode => Object.hash(id, clientId, provider, serviceId, timeSlot, workerId);
 }
 
 class ReservationProvider {
@@ -101,41 +101,45 @@ class ReservationProvider {
 	int get hashCode => Object.hash(id, name, companyName);
 }
 
-class PaymentInfo {
+class ServiceInfo {
 	final int id;
-	final double amount;
-	final String currency;
-	final bool status;
+	final String name;
+	final int duration; // duration in minutes (or unit used by API)
+	final double price;
+	final int providerId;
 
-	PaymentInfo({
+	ServiceInfo({
 		required this.id,
-		required this.amount,
-		required this.currency,
-		required this.status,
+		required this.name,
+		required this.duration,
+		required this.price,
+		required this.providerId,
 	});
 
-	factory PaymentInfo.fromJson(Map<String, dynamic> json) => PaymentInfo(
+	factory ServiceInfo.fromJson(Map<String, dynamic> json) => ServiceInfo(
 				id: json['id'] as int,
-				amount: (json['amount'] is int) ? (json['amount'] as int).toDouble() : (json['amount'] as num).toDouble(),
-				currency: json['currency'] as String,
-				status: json['status'] as bool,
+				name: json['name'] as String,
+				duration: json['duration'] is int ? json['duration'] as int : (json['duration'] as num).toInt(),
+				price: (json['price'] is int) ? (json['price'] as int).toDouble() : (json['price'] as num).toDouble(),
+				providerId: json['providerId'] as int,
 			);
 
 	Map<String, dynamic> toJson() => {
 				'id': id,
-				'amount': amount,
-				'currency': currency,
-				'status': status,
+				'name': name,
+				'duration': duration,
+				'price': price,
+				'providerId': providerId,
 			};
 
 	@override
 	bool operator ==(Object other) {
 		return identical(this, other) ||
-				(other is PaymentInfo && other.id == id && other.amount == amount && other.currency == currency && other.status == status);
+				(other is ServiceInfo && other.id == id && other.name == name && other.duration == duration && other.price == price && other.providerId == providerId);
 	}
 
 	@override
-	int get hashCode => Object.hash(id, amount, currency, status);
+	int get hashCode => Object.hash(id, name, duration, price, providerId);
 }
 
 class TimeSlot {

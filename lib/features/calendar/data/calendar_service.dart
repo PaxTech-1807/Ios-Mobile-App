@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:iosmobileapp/features/calendar/domain/reservation.dart';
 
 class CalendarService {
-  final String baseUrl = 'http://192.168.18.151:9090/api/v1/reservationsDetails';
+  final String baseUrl = 'https://paxtech.azurewebsites.net/api/v1/reservationsDetails';
 
   Future<List<Reservation>> getReservations() async {
     final response = await http.get(Uri.parse('$baseUrl/details'));

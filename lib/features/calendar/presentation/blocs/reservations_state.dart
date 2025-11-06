@@ -1,65 +1,41 @@
+import 'package:flutter/cupertino.dart';
 import 'package:iosmobileapp/features/calendar/domain/reservation.dart';
-import 'package:iosmobileapp/features/calendar/domain/reservation_groups.dart';
 
-sealed class ReservationsState {
-  const ReservationsState();
-}
+enum Status { initial, loading, success, failure }
+enum ViewType { day, month, year }
 
-class ReservationsInitialState extends ReservationsState {
-  const ReservationsInitialState();
-}
+class ReservationsState {
+  final List<Reservation> reservations;
+  final Status status;
+  final String? message;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final ViewType viewType;
 
-class ReservationsLoadingState extends ReservationsState {
-  const ReservationsLoadingState();
-}
-
-class ReservationsSuccessState extends ReservationsState {
-  final List<Reservation> reservations; // Example reservation data
-  final List<MonthlyGroup> monthlyGroups;
-  final List<WeeklyGroup> weeklyGroups;
-  final List<DailyGroup> dailyGroups;
-  final List<WorkerGroup> workerGroups;
-  const ReservationsSuccessState({
-    required this.reservations,
-    required this.monthlyGroups,
-    required this.weeklyGroups,
-    required this.dailyGroups,
-    required this.workerGroups,
+  const ReservationsState({
+    this.reservations = const [],
+    this.status = Status.initial,
+    this.message,
+    this.startDate,
+    this.endDate,
+    this.viewType = ViewType.month,
   });
-//Evitar build inecesarios
-   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is ReservationsSuccessState &&
-        other.reservations == reservations &&
-        other.monthlyGroups == monthlyGroups &&
-        other.weeklyGroups == weeklyGroups &&
-        other.dailyGroups == dailyGroups &&
-        other.workerGroups == workerGroups;
+
+  ReservationsState copyWith({
+    List<Reservation>? reservations,
+    Status? status,
+    String? message,
+    DateTime? startDate,
+    DateTime? endDate,
+    ViewType? viewType,
+  }) {
+    return ReservationsState(
+      reservations: reservations ?? this.reservations,
+      status: status ?? this.status,
+      message: message ?? this.message,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      viewType: viewType ?? this.viewType,
+    );
   }
-
-  @override
-  int get hashCode => Object.hash(
-        reservations,
-        monthlyGroups,
-        weeklyGroups,
-        dailyGroups,
-        workerGroups,
-      );
-}
-
-class ReservationsFailureState extends ReservationsState {
-  final String errorMessage;
-
-  const ReservationsFailureState(this.errorMessage);
-  //Evitar build inecesarios
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is ReservationsFailureState &&
-        other.errorMessage == errorMessage;
-  }
-
-  @override
-  int get hashCode => errorMessage.hashCode;
 }
