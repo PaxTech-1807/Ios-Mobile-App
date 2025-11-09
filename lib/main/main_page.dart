@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iosmobileapp/features/calendar/presentation/reservation_page.dart';
+import 'package:iosmobileapp/features/team/presentation/team_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -10,10 +11,15 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int selectedIndex = 0;
+
+  final List<Widget> _pages = const [TeamPage(), ReservationPage()];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: ReservationPage()),
+      body: SafeArea(
+        child: IndexedStack(index: selectedIndex, children: _pages),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: selectedIndex,
         onTap: (value) {
@@ -23,11 +29,15 @@ class _MainPageState extends State<MainPage> {
         },
         items: const [
           BottomNavigationBarItem(
+            icon: Icon(Icons.group_outlined),
+            label: 'Equipo',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
             label: 'Calendario',
-          )
-        ]
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
