@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iosmobileapp/features/calendar/presentation/reservation_page.dart';
+import 'package:iosmobileapp/features/service/presentation/service_page.dart';
 import 'package:iosmobileapp/features/team/presentation/team_page.dart';
 
 class MainPage extends StatefulWidget {
@@ -12,7 +13,11 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int selectedIndex = 0;
 
-  final List<Widget> _pages = const [TeamPage(), ReservationPage()];
+  final List<Widget> _pages = const [
+    TeamPage(),
+    ServicePage(),
+    ReservationPage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +36,10 @@ class _MainPageState extends State<MainPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.group_outlined),
             label: 'Equipo',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.content_cut),
+            label: 'Servicios',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
