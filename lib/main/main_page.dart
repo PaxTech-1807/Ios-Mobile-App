@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iosmobileapp/features/calendar/presentation/reservation_page.dart';
+import 'package:iosmobileapp/features/profile/presentation/pages/profile_overview_page.dart';
 import 'package:iosmobileapp/features/service/presentation/service_page.dart';
 import 'package:iosmobileapp/features/team/presentation/team_page.dart';
 
@@ -17,6 +18,7 @@ class _MainPageState extends State<MainPage> {
     TeamPage(),
     ServicePage(),
     ReservationPage(),
+    ProfileOverviewPage(),
   ];
 
   @override
@@ -26,6 +28,11 @@ class _MainPageState extends State<MainPage> {
         child: IndexedStack(index: selectedIndex, children: _pages),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        selectedItemColor: Theme.of(context).colorScheme.onPrimary,
+        unselectedItemColor:
+            Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+        type: BottomNavigationBarType.fixed,
         currentIndex: selectedIndex,
         onTap: (value) {
           setState(() {
@@ -44,6 +51,10 @@ class _MainPageState extends State<MainPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
             label: 'Calendario',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Perfil',
           ),
         ],
       ),
