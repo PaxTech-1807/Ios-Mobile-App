@@ -142,7 +142,7 @@ class _ReservationPageState extends State<ReservationPage> {
               subtitle: Text(
                 '${reservation.timeSlot.startTime.toString().substring(11, 16)} - ${reservation.serviceId.name}',
               ),
-              trailing: Text('${reservation.workerId.name}'),
+              trailing: Text(reservation.workerId.name),
             );
           }).toList(),
         );
@@ -170,7 +170,7 @@ class _ReservationPageState extends State<ReservationPage> {
               subtitle: Text(
                 '${reservation.timeSlot.startTime.toString().substring(0, 16)} - ${reservation.serviceId.name}',
               ),
-              trailing: Text('${reservation.workerId.name}'),
+              trailing: Text(reservation.workerId.name),
             );
           }).toList(),
         );
@@ -198,7 +198,7 @@ class _ReservationPageState extends State<ReservationPage> {
               subtitle: Text(
                 '${reservation.timeSlot.startTime.toString().substring(0, 16)} - ${reservation.serviceId.name}',
               ),
-              trailing: Text('${reservation.workerId.name}'),
+              trailing: Text(reservation.workerId.name),
             );
           }).toList(),
         );
