@@ -77,7 +77,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   return DropdownButtonFormField<Service>(
-                    value: _selectedService,
+                    initialValue: _selectedService,
                     hint: const Text('Seleccionar servicio'),
                     decoration:
                     const InputDecoration(border: OutlineInputBorder()),
@@ -112,7 +112,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
                     return const Text('Cargando equipo...');
                   }
                   return DropdownButtonFormField<Worker>(
-                    value: _selectedWorker,
+                    initialValue: _selectedWorker,
                     hint: const Text('Seleccionar profesional'),
                     decoration:
                     const InputDecoration(border: OutlineInputBorder()),
@@ -150,7 +150,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
 
                   // 2. El Dropdown si todo está bien
                   return DropdownButtonFormField<TimeSlot>(
-                    value: _selectedTimeSlot,
+                    initialValue: _selectedTimeSlot,
                     hint: const Text('Seleccionar horario disponible'),
                     decoration:
                     const InputDecoration(border: OutlineInputBorder()),

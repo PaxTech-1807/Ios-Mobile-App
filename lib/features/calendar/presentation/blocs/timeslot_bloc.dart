@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iosmobileapp/features/calendar/data/timeslot_service.dart';
 import 'package:iosmobileapp/features/calendar/domain/reservation.dart'; // Importa TimeSlot
-import 'package:iosmobileapp/features/calendar/domain/timeslot_request.dart'; // Importa TimeSlotRequest
+// Importa TimeSlotRequest
 import 'package:iosmobileapp/features/calendar/presentation/blocs/timeslot_event.dart';
 import 'package:iosmobileapp/features/calendar/presentation/blocs/timeslot_state.dart';
 

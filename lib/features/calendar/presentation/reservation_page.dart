@@ -34,7 +34,7 @@ class ReservationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Pega tu token NUEVO y VÁLIDO aquí
-    final String? myAuthToken = 'eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJjYXJvY2Fyb0BnbWFpbC5jb20iLCJpYXQiOjE3NjI5MDk5NjIsImV4cCI6MTc2MzUxNDc2Mn0.jr_CP1m6Z9Uj0-13okXMGLmTnbFIIJL06aSCRbHbQjN2tMSDTbz-Mr0b0XOZ0iJb';
+    final String myAuthToken = 'eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJjYXJvY2Fyb0BnbWFpbC5jb20iLCJpYXQiOjE3NjI5MDk5NjIsImV4cCI6MTc2MzUxNDc2Mn0.jr_CP1m6Z9Uj0-13okXMGLmTnbFIIJL06aSCRbHbQjN2tMSDTbz-Mr0b0XOZ0iJb';
 
     return MultiBlocProvider(
       providers: [

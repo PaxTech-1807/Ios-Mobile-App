@@ -98,8 +98,9 @@ class WorkerCard extends StatelessWidget {
 
   String _initials(String name) {
     final parts = name.trim().split(RegExp(r'\\s+'));
-    if (parts.length == 1)
+    if (parts.length == 1) {
       return parts.first.isNotEmpty ? parts.first[0].toUpperCase() : '?';
+    }
     final first = parts.first.isNotEmpty ? parts.first[0].toUpperCase() : '';
     final last = parts.last.isNotEmpty ? parts.last[0].toUpperCase() : '';
     final initials = '$first$last';

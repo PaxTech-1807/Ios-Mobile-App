@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iosmobileapp/features/calendar/data/calendar_service.dart';
 import 'package:iosmobileapp/features/calendar/domain/reservation.dart';
-import 'package:iosmobileapp/features/calendar/domain/reservation_request.dart'; // Importar
+// Importar
 import 'package:iosmobileapp/features/calendar/presentation/blocs/reservations_event.dart';
 import 'package:iosmobileapp/features/calendar/presentation/blocs/reservations_state.dart';
 
