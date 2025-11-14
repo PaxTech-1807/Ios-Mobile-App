@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:iosmobileapp/core/services/onboarding_service.dart';
 import 'package:iosmobileapp/features/team/data/team_service.dart';
 import 'package:iosmobileapp/features/team/domain/worker.dart';
 import 'package:iosmobileapp/features/team/presentation/blocs/workers_bloc.dart';
@@ -10,14 +11,43 @@ import 'package:iosmobileapp/features/team/presentation/widgets/worker_card.dart
 
 import 'worker_form_page.dart';
 
-class TeamPage extends StatelessWidget {
+class TeamPage extends StatefulWidget {
   const TeamPage({super.key});
 
   @override
+  State<TeamPage> createState() => _TeamPageState();
+}
+
+class _TeamPageState extends State<TeamPage> {
+  final _onboardingService = OnboardingService();
+  TeamService? _service;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeService();
+  }
+
+  Future<void> _initializeService() async {
+    final token = await _onboardingService.getJwtToken();
+    if (mounted) {
+      setState(() {
+        _service = TeamService(authToken: token);
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_service == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return BlocProvider(
       create: (_) =>
-          WorkersBloc(service: TeamService())..add(const LoadWorkers()),
+          WorkersBloc(service: _service!)..add(const LoadWorkers()),
       child: Builder(
         builder: (context) {
           return const _TeamView();

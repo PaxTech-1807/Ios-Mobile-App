@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:iosmobileapp/main/main_page.dart';
+import 'package:iosmobileapp/core/theme/app_theme.dart';
+import 'package:iosmobileapp/features/auth/presentation/splash_screen.dart';
 
 void main() {
   runApp(const MainApp());
@@ -11,9 +12,10 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Reservas App',
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      home: const MainPage(),
+      title: 'uTime',
+      theme: AppTheme.lightTheme,
+      home: const SplashScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

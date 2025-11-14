@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:iosmobileapp/core/services/onboarding_service.dart';
 import 'package:iosmobileapp/features/service/data/services_service.dart';
 import 'package:iosmobileapp/features/service/domain/service.dart';
 import 'package:iosmobileapp/features/service/presentation/blocs/services_bloc.dart';
@@ -10,14 +11,43 @@ import 'package:iosmobileapp/features/service/presentation/widgets/service_card.
 
 import 'service_form_page.dart';
 
-class ServicePage extends StatelessWidget {
+class ServicePage extends StatefulWidget {
   const ServicePage({super.key});
 
   @override
+  State<ServicePage> createState() => _ServicePageState();
+}
+
+class _ServicePageState extends State<ServicePage> {
+  final _onboardingService = OnboardingService();
+  ServicesService? _service;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeService();
+  }
+
+  Future<void> _initializeService() async {
+    final token = await _onboardingService.getJwtToken();
+    if (mounted) {
+      setState(() {
+        _service = ServicesService(authToken: token);
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_service == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return BlocProvider(
       create: (_) =>
-          ServicesBloc(service: ServicesService())..add(const LoadServices()),
+          ServicesBloc(service: _service!)..add(const LoadServices()),
       child: Builder(builder: (context) => const _ServiceView()),
     );
   }
