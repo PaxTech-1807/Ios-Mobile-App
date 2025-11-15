@@ -8,6 +8,7 @@ import 'package:iosmobileapp/features/team/presentation/blocs/workers_event.dart
 import 'package:iosmobileapp/features/team/presentation/blocs/workers_state.dart';
 import 'package:iosmobileapp/features/team/presentation/widgets/empty_team_placeholder.dart';
 import 'package:iosmobileapp/features/team/presentation/widgets/worker_card.dart';
+import 'package:iosmobileapp/features/team/presentation/widgets/worker_modal.dart';
 
 import 'worker_form_page.dart';
 
@@ -63,11 +64,24 @@ class _TeamView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Equipo')),
-      floatingActionButton: FloatingActionButton.extended(
+      appBar: AppBar(
+        title: const Text(
+          'Trabajadores',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 0,
+      ),
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _openCreateWorker(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Agregar miembro'),
+        backgroundColor: const Color(0xFF7209B7),
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 28,
+        ),
       ),
       body: BlocListener<WorkersBloc, WorkersState>(
         listenWhen: (previous, current) =>
@@ -112,9 +126,7 @@ class _TeamView extends StatelessWidget {
                       final isDeleting = state.deletingWorkerId == worker.id;
                       return WorkerCard(
                         worker: worker,
-                        onEdit: () => _openEditWorker(context, worker),
-                        onDelete: () => _confirmDelete(context, worker),
-                        isDeleting: isDeleting,
+                        onTap: () => _openWorkerModal(context, worker, isDeleting),
                       );
                     },
                   ),
@@ -136,42 +148,18 @@ class _TeamView extends StatelessWidget {
     );
   }
 
-  void _openEditWorker(BuildContext context, Worker worker) {
+  void _openWorkerModal(BuildContext context, Worker worker, bool isDeleting) {
     final bloc = context.read<WorkersBloc>();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: bloc,
-          child: WorkerFormPage(initialWorker: worker),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _confirmDelete(BuildContext context, Worker worker) async {
-    final shouldDelete = await showDialog<bool>(
+    
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar miembro'),
-        content: Text('¿Deseas eliminar a ${worker.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton.tonal(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Eliminar'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BlocProvider.value(
+        value: bloc,
+        child: WorkerModal(worker: worker, isDeleting: isDeleting),
       ),
     );
-
-    if (shouldDelete == true) {
-      context.read<WorkersBloc>().add(
-        DeleteWorkerRequested(workerId: worker.id),
-      );
-    }
   }
 }
 

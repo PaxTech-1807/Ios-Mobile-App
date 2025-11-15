@@ -1,10 +1,46 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/services/onboarding_service.dart';
 import '../widgets/profile_info_row.dart';
 import '../widgets/profile_section_card.dart';
 
-class ProfileDetailsPage extends StatelessWidget {
+class ProfileDetailsPage extends StatefulWidget {
   const ProfileDetailsPage({super.key});
+
+  @override
+  State<ProfileDetailsPage> createState() => _ProfileDetailsPageState();
+}
+
+class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
+  final _onboardingService = OnboardingService();
+  String? _companyName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompanyName();
+  }
+
+  Future<void> _loadCompanyName() async {
+    final companyName = await _onboardingService.getCompanyName();
+    if (mounted) {
+      setState(() {
+        _companyName = companyName;
+      });
+    }
+  }
+
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return '?';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length == 1) {
+      return parts.first.isNotEmpty ? parts.first[0].toUpperCase() : '?';
+    }
+    final first = parts.first.isNotEmpty ? parts.first[0].toUpperCase() : '';
+    final last = parts.last.isNotEmpty ? parts.last[0].toUpperCase() : '';
+    final initials = '$first$last';
+    return initials.isEmpty ? '?' : initials;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +60,14 @@ class ProfileDetailsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         children: [
-          _ProfileIdentityCard(theme: theme),
-          const ProfileSectionCard(
+          _ProfileIdentityCard(theme: theme, companyName: _companyName, getInitials: _getInitials),
+          ProfileSectionCard(
             title: 'Información del negocio',
             children: [
               ProfileInfoRow(
                 icon: Icons.store_mall_directory_outlined,
                 label: 'Nombre de empresa',
-                value: 'Estudio Bliss & Blade',
+                value: _companyName ?? 'Mi Salón',
               ),
               ProfileInfoRow(
                 icon: Icons.place_outlined,
@@ -92,9 +128,15 @@ class ProfileDetailsPage extends StatelessWidget {
 }
 
 class _ProfileIdentityCard extends StatelessWidget {
-  const _ProfileIdentityCard({required this.theme});
+  const _ProfileIdentityCard({
+    required this.theme,
+    required this.companyName,
+    required this.getInitials,
+  });
 
   final ThemeData theme;
+  final String? companyName;
+  final String Function(String?) getInitials;
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +151,7 @@ class _ProfileIdentityCard extends StatelessWidget {
               radius: 32,
               backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
               child: Text(
-                'EB',
+                getInitials(companyName),
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -122,7 +164,7 @@ class _ProfileIdentityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Estudio Bliss & Blade',
+                    companyName ?? 'Mi Salón',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),

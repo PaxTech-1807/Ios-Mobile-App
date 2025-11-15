@@ -8,6 +8,7 @@ import 'package:iosmobileapp/features/service/presentation/blocs/services_event.
 import 'package:iosmobileapp/features/service/presentation/blocs/services_state.dart';
 import 'package:iosmobileapp/features/service/presentation/widgets/empty_service_placeholder.dart';
 import 'package:iosmobileapp/features/service/presentation/widgets/service_card.dart';
+import 'package:iosmobileapp/features/service/presentation/widgets/service_modal.dart';
 
 import 'service_form_page.dart';
 
@@ -59,11 +60,24 @@ class _ServiceView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Servicios')),
-      floatingActionButton: FloatingActionButton.extended(
+      appBar: AppBar(
+        title: const Text(
+          'Servicios',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 0,
+      ),
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _openCreateService(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Nuevo servicio'),
+        backgroundColor: const Color(0xFF7209B7),
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 28,
+        ),
       ),
       body: BlocListener<ServicesBloc, ServicesState>(
         listenWhen: (previous, current) =>
@@ -104,12 +118,9 @@ class _ServiceView extends StatelessWidget {
                     itemCount: state.services.length,
                     itemBuilder: (context, index) {
                       final service = state.services[index];
-                      final isDeleting = state.deletingServiceId == service.id;
                       return ServiceCard(
                         service: service,
-                        onEdit: () => _openEditService(context, service),
-                        onDelete: () => _confirmDelete(context, service),
-                        isDeleting: isDeleting,
+                        onTap: () => _openServiceModal(context, service),
                       );
                     },
                   ),
@@ -131,42 +142,20 @@ class _ServiceView extends StatelessWidget {
     );
   }
 
-  void _openEditService(BuildContext context, Service service) {
+  void _openServiceModal(BuildContext context, Service service) {
     final bloc = context.read<ServicesBloc>();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: bloc,
-          child: ServiceFormPage(initialService: service),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _confirmDelete(BuildContext context, Service service) async {
-    final shouldDelete = await showDialog<bool>(
+    final state = context.read<ServicesBloc>().state;
+    final isDeleting = state.deletingServiceId == service.id;
+    
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar servicio'),
-        content: Text('¿Eliminar el servicio "${service.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton.tonal(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Eliminar'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BlocProvider.value(
+        value: bloc,
+        child: ServiceModal(service: service, isDeleting: isDeleting),
       ),
     );
-
-    if (shouldDelete == true) {
-      context.read<ServicesBloc>().add(
-        DeleteServiceRequested(serviceId: service.id),
-      );
-    }
   }
 }
 

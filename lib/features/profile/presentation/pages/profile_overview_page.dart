@@ -1,11 +1,72 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/routes/app_routes.dart';
+import '../../../../core/services/onboarding_service.dart';
+import '../../../auth/presentation/login_screen.dart';
 import '../widgets/profile_menu_item.dart';
 import 'profile_details_page.dart';
 import 'profile_notifications_page.dart';
 
-class ProfileOverviewPage extends StatelessWidget {
+class ProfileOverviewPage extends StatefulWidget {
   const ProfileOverviewPage({super.key});
+
+  @override
+  State<ProfileOverviewPage> createState() => _ProfileOverviewPageState();
+}
+
+class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
+  final _onboardingService = OnboardingService();
+  String? _companyName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompanyName();
+  }
+
+  Future<void> _loadCompanyName() async {
+    final companyName = await _onboardingService.getCompanyName();
+    if (mounted) {
+      setState(() {
+        _companyName = companyName;
+      });
+    }
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    // Mostrar diálogo de confirmación
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      // Borrar JWT y datos de sesión
+      final onboardingService = OnboardingService();
+      await onboardingService.logout();
+
+      if (!context.mounted) return;
+
+      // Redirigir a Login y limpiar el stack de navegación
+      Navigator.of(context).pushAndRemoveUntil(
+        AppRoutes.createFadeRoute(const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,17 +75,27 @@ class ProfileOverviewPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: background,
+      appBar: AppBar(
+        title: const Text(
+          'Perfil',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
           children: [
-            _ProfileSummaryCard(theme: theme),
+            _ProfileSummaryCard(theme: theme, companyName: _companyName),
             const SizedBox(height: 24),
             const Text(
               'Configuración',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
@@ -63,14 +134,48 @@ class ProfileOverviewPage extends StatelessWidget {
               title: 'Preguntas frecuentes',
             ),
             const SizedBox(height: 24),
-            FilledButton.tonalIcon(
-              onPressed: () {},
-              icon: const Icon(Icons.logout),
-              label: const Text('Cerrar sesión'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+            Container(
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF7209B7),
+                    Color(0xFF9D4EDD),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF7209B7).withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _handleLogout(context),
+                  borderRadius: BorderRadius.circular(14),
+                  child: const Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.logout, color: Colors.white, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Cerrar sesión',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -82,52 +187,79 @@ class ProfileOverviewPage extends StatelessWidget {
 }
 
 class _ProfileSummaryCard extends StatelessWidget {
-  const _ProfileSummaryCard({required this.theme});
+  const _ProfileSummaryCard({
+    required this.theme,
+    required this.companyName,
+  });
 
   final ThemeData theme;
+  final String? companyName;
+
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return '?';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length == 1) {
+      return parts.first.isNotEmpty ? parts.first[0].toUpperCase() : '?';
+    }
+    final first = parts.first.isNotEmpty ? parts.first[0].toUpperCase() : '';
+    final last = parts.last.isNotEmpty ? parts.last[0].toUpperCase() : '';
+    final initials = '$first$last';
+    return initials.isEmpty ? '?' : initials;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
           colors: [
-            theme.colorScheme.primary.withOpacity(0.18),
-            theme.colorScheme.primary.withOpacity(0.05),
+            Color(0xFF7209B7),
+            Color(0xFF9D4EDD),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7209B7).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Estudio Bliss & Blade',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
+            companyName ?? 'Mi Salón',
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             'Cuenta de empresa',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerLeft,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.shadowColor.withOpacity(0.08),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -136,13 +268,18 @@ class _ProfileSummaryCard extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.radio_button_checked,
-                      size: 16, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.radio_button_checked,
+                    size: 14,
+                    color: const Color(0xFF7209B7),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     'Estado: Abierto',
-                    style: theme.textTheme.labelLarge?.copyWith(
+                    style: TextStyle(
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
                     ),
                   ),
                 ],

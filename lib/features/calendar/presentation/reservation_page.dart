@@ -25,7 +25,14 @@ class _ReservationPageState extends State<ReservationPage> {
         )),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Reservaciones'),
+          title: const Text(
+            'Calendario',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          elevation: 0,
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(50),
             child: BlocBuilder<ReservationsBloc, ReservationsState>(

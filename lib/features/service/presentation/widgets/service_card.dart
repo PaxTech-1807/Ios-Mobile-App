@@ -5,107 +5,168 @@ class ServiceCard extends StatelessWidget {
   const ServiceCard({
     super.key,
     required this.service,
-    required this.onEdit,
-    required this.onDelete,
-    this.isDeleting = false,
+    required this.onTap,
   });
 
   final Service service;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-  final bool isDeleting;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      elevation: 0.5,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      height: 80, // Altura fija para todas las cards
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: const Color(0xFF7209B7).withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Icon Container with Gradient
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF7209B7),
+                        Color(0xFF9D4EDD),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7209B7).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.content_cut,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Service Name and Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         service.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          letterSpacing: -0.2,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          _InfoBadge(
+                            icon: Icons.access_time,
+                            value: '${service.duration} min',
+                            color: const Color(0xFF7209B7),
+                          ),
+                          const SizedBox(width: 8),
+                          _InfoBadge(
+                            icon: null,
+                            value: _formatPrice(service.price),
+                            color: const Color(0xFF9D4EDD),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  onPressed: onEdit,
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Editar',
-                ),
-                IconButton(
-                  onPressed: isDeleting ? null : onDelete,
-                  icon: isDeleting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.delete_outline),
-                  tooltip: 'Eliminar',
-                ),
               ],
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: [
-                _InfoChip(label: 'Duración', value: '${service.duration} min'),
-                _InfoChip(label: 'Precio', value: _formatPrice(service.price)),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   String _formatPrice(double price) {
-    return price.toStringAsFixed(2);
+    return '\$${price.toStringAsFixed(2)}';
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.label, required this.value});
+class _InfoBadge extends StatelessWidget {
+  const _InfoBadge({
+    required this.icon,
+    required this.value,
+    required this.color,
+  });
 
-  final String label;
+  final IconData? icon;
   final String value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 12,
+              color: color,
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

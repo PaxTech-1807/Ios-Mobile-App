@@ -79,9 +79,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         return;
       }
 
-      // 4. Guardar JWT y userId
+      // 4. Guardar JWT, userId y companyName
       await _onboardingService.saveJwtToken(signInResponse.token);
       await _onboardingService.saveUserId(signInResponse.id);
+      await _onboardingService.saveCompanyName(provider.companyName);
 
       if (!mounted) return;
 

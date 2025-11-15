@@ -5,6 +5,7 @@ class OnboardingService {
   static const String _userLoggedInKey = 'user_logged_in';
   static const String _jwtTokenKey = 'jwt_token';
   static const String _userIdKey = 'user_id';
+  static const String _companyNameKey = 'company_name';
 
   Future<bool> isOnboardingCompleted() async {
     final prefs = await SharedPreferences.getInstance();
@@ -57,11 +58,22 @@ class OnboardingService {
     await prefs.remove(_userIdKey);
   }
 
+  Future<void> saveCompanyName(String companyName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_companyNameKey, companyName);
+  }
+
+  Future<String?> getCompanyName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_companyNameKey);
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userLoggedInKey);
     await prefs.remove(_jwtTokenKey);
     await prefs.remove(_userIdKey);
+    await prefs.remove(_companyNameKey);
   }
 }
 
