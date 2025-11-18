@@ -56,6 +56,8 @@ class WorkerRequest {
   final String photoUrl;
   final int providerId;
 
+  static const String _defaultPhotoUrl = 'https://example.com';
+
   const WorkerRequest({
     required this.name,
     required this.specialization,
@@ -67,16 +69,22 @@ class WorkerRequest {
     return WorkerRequest(
       name: worker.name,
       specialization: worker.specialization,
-      photoUrl: worker.photoUrl,
+      photoUrl: worker.photoUrl.isEmpty ? _defaultPhotoUrl : worker.photoUrl,
       providerId: worker.providerId,
     );
   }
 
   Map<String, dynamic> toJson() {
+    // Si photoUrl está vacío o es la URL por defecto, usar la URL por defecto
+    final photoUrlValue = photoUrl.trim();
+    final finalPhotoUrl = photoUrlValue.isEmpty 
+        ? _defaultPhotoUrl 
+        : photoUrlValue;
+    
     return {
       'name': name,
       'specialization': specialization,
-      'photoUrl': photoUrl,
+      'photoUrl': finalPhotoUrl,
       'providerId': providerId,
     };
   }

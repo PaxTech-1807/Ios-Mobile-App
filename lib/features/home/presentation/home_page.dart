@@ -1,5 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iosmobileapp/core/services/onboarding_service.dart';
+import 'package:iosmobileapp/features/reviews/presentation/blocs/reviews_bloc.dart';
+import 'package:iosmobileapp/features/reviews/presentation/blocs/reviews_event.dart';
+import 'package:iosmobileapp/features/reviews/presentation/blocs/reviews_state.dart';
+import 'package:iosmobileapp/features/reviews/presentation/widgets/review_card.dart';
+import 'package:iosmobileapp/features/reviews/presentation/widgets/review_filter_bar.dart';
+import 'package:iosmobileapp/features/service/presentation/blocs/services_bloc.dart';
+import 'package:iosmobileapp/features/service/presentation/blocs/services_event.dart';
+import 'package:iosmobileapp/features/service/presentation/blocs/services_state.dart';
+import 'package:iosmobileapp/features/service/data/services_service.dart';
+import 'package:iosmobileapp/features/team/presentation/blocs/workers_bloc.dart';
+import 'package:iosmobileapp/features/team/presentation/blocs/workers_event.dart';
+import 'package:iosmobileapp/features/team/presentation/blocs/workers_state.dart';
+import 'package:iosmobileapp/features/team/data/team_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -14,12 +28,14 @@ class HomePage extends StatefulWidget {
   final VoidCallback? onNavigateToCalendar;
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   final _onboardingService = OnboardingService();
   String? _companyName;
+  int? _selectedRating;
+  String? _selectedSort;
 
   @override
   void initState() {
@@ -36,16 +52,78 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => ReviewsBloc()..add(const LoadReviewsRequested()),
+        ),
+        BlocProvider(
+          create: (context) => ServicesBloc(service: ServicesService())
+            ..add(const LoadServices()),
+        ),
+        BlocProvider(
+          create: (context) => WorkersBloc(service: TeamService())
+            ..add(const LoadWorkers()),
+        ),
+      ],
+      child: _HomePageContent(
+        companyName: _companyName,
+        selectedRating: _selectedRating,
+        selectedSort: _selectedSort,
+        onRatingChanged: (rating) {
+          setState(() {
+            _selectedRating = rating;
+          });
+        },
+        onSortChanged: (sort) {
+          setState(() {
+            _selectedSort = sort;
+          });
+        },
+      ),
+    );
+  }
+}
+
+class _HomePageContent extends StatelessWidget {
+  const _HomePageContent({
+    required this.companyName,
+    required this.selectedRating,
+    required this.selectedSort,
+    required this.onRatingChanged,
+    required this.onSortChanged,
+  });
+
+  final String? companyName;
+  final int? selectedRating;
+  final String? selectedSort;
+  final ValueChanged<int?> onRatingChanged;
+  final ValueChanged<String?> onSortChanged;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        backgroundColor: Colors.grey.shade50,
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              // Actualizar todos los blocs
+              context.read<ReviewsBloc>().add(const LoadReviewsRequested());
+              context.read<WorkersBloc>().add(const LoadWorkers());
+              context.read<ServicesBloc>().add(const LoadServices());
+              // Esperar un poco para que se complete el refresh
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            color: const Color(0xFF7209B7),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               const SizedBox(height: 16),
               
               // Header morado flotante
@@ -98,7 +176,7 @@ class _HomePageState extends State<HomePage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            _companyName ?? 'Mi Salón',
+                            companyName ?? 'Mi Salón',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -160,20 +238,30 @@ class _HomePageState extends State<HomePage> {
               Row(
                 children: [
                   Expanded(
-                    child: _StatCard(
-                      icon: Icons.people_outline,
-                      label: 'Trabajadores',
-                      value: '0',
-                      color: const Color(0xFF7209B7),
+                    child: BlocBuilder<WorkersBloc, WorkersState>(
+                      builder: (context, state) {
+                        final count = state.workers.length;
+                        return _StatCard(
+                          icon: Icons.people_outline,
+                          label: 'Trabajadores',
+                          value: count.toString(),
+                          color: const Color(0xFF7209B7),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _StatCard(
-                      icon: Icons.content_cut,
-                      label: 'Servicios',
-                      value: '0',
-                      color: const Color(0xFF9D4EDD),
+                    child: BlocBuilder<ServicesBloc, ServicesState>(
+                      builder: (context, state) {
+                        final count = state.services.length;
+                        return _StatCard(
+                          icon: Icons.content_cut,
+                          label: 'Servicios',
+                          value: count.toString(),
+                          color: const Color(0xFF9D4EDD),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -205,48 +293,169 @@ class _HomePageState extends State<HomePage> {
               
               const SizedBox(height: 32),
               
-              // Quick Actions
-              Text(
-                'Accesos rápidos',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
-                ),
+              // Reviews Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Reseñas',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                  BlocBuilder<ReviewsBloc, ReviewsState>(
+                    builder: (context, state) {
+                      if (state is ReviewsLoaded) {
+                        return Text(
+                          '${state.filteredReviews.length} reseña${state.filteredReviews.length != 1 ? 's' : ''}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
               ),
               
               const SizedBox(height: 16),
               
-              _QuickActionCard(
-                icon: Icons.people,
-                title: 'Trabajadores',
-                subtitle: 'Gestiona tu equipo',
-                color: const Color(0xFF7209B7),
-                onTap: widget.onNavigateToTeam ?? () {},
+              // Filter Bar
+              BlocBuilder<ReviewsBloc, ReviewsState>(
+                builder: (context, state) {
+                  return ReviewFilterBar(
+                    selectedRating: selectedRating,
+                    selectedSort: selectedSort,
+                    onRatingChanged: (rating) {
+                      onRatingChanged(rating);
+                      context.read<ReviewsBloc>().add(
+                        FilterReviewsRequested(
+                          minRating: rating,
+                          timeFilter: selectedSort,
+                        ),
+                      );
+                    },
+                    onSortChanged: (sort) {
+                      onSortChanged(sort);
+                      context.read<ReviewsBloc>().add(
+                        FilterReviewsRequested(
+                          minRating: selectedRating,
+                          timeFilter: sort,
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
               
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               
-              _QuickActionCard(
-                icon: Icons.content_cut,
-                title: 'Servicios',
-                subtitle: 'Administra tus servicios',
-                color: const Color(0xFF9D4EDD),
-                onTap: widget.onNavigateToServices ?? () {},
-              ),
-              
-              const SizedBox(height: 12),
-              
-              _QuickActionCard(
-                icon: Icons.calendar_today,
-                title: 'Calendario',
-                subtitle: 'Ver reservaciones',
-                color: const Color(0xFF7209B7),
-                onTap: widget.onNavigateToCalendar ?? () {},
+              // Reviews List
+              BlocBuilder<ReviewsBloc, ReviewsState>(
+                builder: (context, state) {
+                  if (state is ReviewsLoading) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF7209B7),
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  if (state is ReviewsError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Error al cargar reseñas',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              state.message,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  if (state is ReviewsLoaded) {
+                    if (state.filteredReviews.isEmpty) {
+                      final hasFilters = state.minRating != null || state.timeFilter != null;
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.rate_review_outlined,
+                                size: 64,
+                                color: Colors.grey.shade300,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                hasFilters ? 'No hay reseñas con esas características' : 'No hay reseñas',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                hasFilters 
+                                    ? 'Intenta cambiar los filtros para ver más reseñas'
+                                    : 'Aún no has recibido reseñas',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    
+                    return Column(
+                      children: state.filteredReviews
+                          .map((review) => ReviewCard(review: review))
+                          .toList(),
+                    );
+                  }
+                  
+                  return const SizedBox.shrink();
+                },
               ),
               
               const SizedBox(height: 20),
             ],
+            ),
           ),
         ),
       ),

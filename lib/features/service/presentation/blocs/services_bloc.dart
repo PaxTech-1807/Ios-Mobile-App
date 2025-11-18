@@ -1,15 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:iosmobileapp/core/services/onboarding_service.dart';
+import 'package:iosmobileapp/features/auth/data/auth_service.dart';
 import 'package:iosmobileapp/features/service/data/services_service.dart';
 import 'package:iosmobileapp/features/service/domain/service.dart';
 import 'package:iosmobileapp/features/service/presentation/blocs/services_event.dart';
 import 'package:iosmobileapp/features/service/presentation/blocs/services_state.dart';
 
 class ServicesBloc extends Bloc<ServicesEvent, ServicesState> {
-  ServicesBloc({required ServicesService service})
-    : _service = service,
-      super(const ServicesState()) {
+  ServicesBloc({
+    required ServicesService service,
+    AuthService? authService,
+    OnboardingService? onboardingService,
+  })  : _service = service,
+        _authService = authService ?? AuthService(),
+        _onboardingService = onboardingService ?? OnboardingService(),
+        super(const ServicesState()) {
     on<LoadServices>(_onLoadServices);
     on<RefreshServices>(_onRefreshServices);
     on<CreateServiceRequested>(_onCreateRequested);
@@ -19,6 +26,8 @@ class ServicesBloc extends Bloc<ServicesEvent, ServicesState> {
   }
 
   final ServicesService _service;
+  final AuthService _authService;
+  final OnboardingService _onboardingService;
 
   Future<void> _onLoadServices(
     LoadServices event,
@@ -149,11 +158,34 @@ class ServicesBloc extends Bloc<ServicesEvent, ServicesState> {
     }
 
     try {
-      final List<Service> services = await _service.getServices();
-      services.sort(
+      // 1. Obtener todos los servicios del API
+      final List<Service> allServices = await _service.getServices();
+      
+      // 2. Obtener el providerId del usuario logueado
+      int? providerId;
+      final userId = await _onboardingService.getUserId();
+      if (userId != null) {
+        final token = await _onboardingService.getJwtToken();
+        if (token != null) {
+          final provider = await _authService.getProviderByUserId(
+            userId: userId,
+            token: token,
+          );
+          providerId = provider?.id;
+        }
+      }
+
+      // 3. Filtrar servicios por providerId
+      final filteredServices = providerId != null
+          ? allServices.where((service) => service.providerId == providerId).toList()
+          : <Service>[];
+      
+      // 4. Ordenar alfabéticamente
+      filteredServices.sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
-      emit(state.copyWith(status: ServicesStatus.success, services: services));
+      
+      emit(state.copyWith(status: ServicesStatus.success, services: filteredServices));
     } catch (error) {
       emit(
         state.copyWith(

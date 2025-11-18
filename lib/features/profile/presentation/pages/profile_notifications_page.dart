@@ -8,26 +8,63 @@ class ProfileNotificationsPage extends StatelessWidget {
     final notifications = _mockNotifications;
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Notificaciones'),
+        title: const Text(
+          'Notificaciones',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         actions: [
           TextButton.icon(
             onPressed: () {},
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('Vaciar'),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: const Text(
+              'Vaciar',
+              style: TextStyle(fontSize: 14),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red.shade600,
+            ),
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        itemCount: notifications.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final item = notifications[index];
-          return _NotificationTile(notification: item);
-        },
-      ),
+      body: notifications.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.notifications_none,
+                    size: 64,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay notificaciones',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(20),
+              itemCount: notifications.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = notifications[index];
+                return _NotificationTile(notification: item);
+              },
+            ),
     );
   }
 }
@@ -39,54 +76,87 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isRecent = notification.relativeTime == 'Ahora' || 
+                     notification.relativeTime.startsWith('Hace');
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        border: isRecent
+            ? Border.all(
+                color: const Color(0xFF7209B7).withOpacity(0.2),
+                width: 1.5,
+              )
+            : null,
         boxShadow: [
           BoxShadow(
-            color: theme.shadowColor.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 6, right: 12),
+            decoration: BoxDecoration(
+              color: isRecent
+                  ? const Color(0xFF7209B7)
+                  : Colors.grey.shade300,
+              shape: BoxShape.circle,
+            ),
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   notification.message,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
                     height: 1.4,
                   ),
                 ),
                 if (notification.dateLabel.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     notification.dateLabel,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          Text(
-            notification.relativeTime,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w700,
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isRecent
+                  ? const Color(0xFF7209B7).withOpacity(0.1)
+                  : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              notification.relativeTime,
+              style: TextStyle(
+                fontSize: 11,
+                color: isRecent
+                    ? const Color(0xFF7209B7)
+                    : Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

@@ -30,10 +30,10 @@ class _TeamPageState extends State<TeamPage> {
   }
 
   Future<void> _initializeService() async {
-    final token = await _onboardingService.getJwtToken();
+    // No necesitamos pasar el token, el servicio lo obtiene automáticamente
     if (mounted) {
       setState(() {
-        _service = TeamService(authToken: token);
+        _service = TeamService();
       });
     }
   }

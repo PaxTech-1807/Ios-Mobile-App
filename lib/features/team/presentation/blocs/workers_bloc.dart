@@ -1,15 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:iosmobileapp/core/services/onboarding_service.dart';
+import 'package:iosmobileapp/features/auth/data/auth_service.dart';
 import 'package:iosmobileapp/features/team/data/team_service.dart';
 import 'package:iosmobileapp/features/team/domain/worker.dart';
 import 'package:iosmobileapp/features/team/presentation/blocs/workers_event.dart';
 import 'package:iosmobileapp/features/team/presentation/blocs/workers_state.dart';
 
 class WorkersBloc extends Bloc<WorkersEvent, WorkersState> {
-  WorkersBloc({required TeamService service})
-    : _service = service,
-      super(const WorkersState()) {
+  WorkersBloc({
+    required TeamService service,
+    AuthService? authService,
+    OnboardingService? onboardingService,
+  })  : _service = service,
+        _authService = authService ?? AuthService(),
+        _onboardingService = onboardingService ?? OnboardingService(),
+        super(const WorkersState()) {
     on<LoadWorkers>(_onLoadWorkers);
     on<RefreshWorkers>(_onRefreshWorkers);
     on<CreateWorkerRequested>(_onCreateWorkerRequested);
@@ -19,6 +26,8 @@ class WorkersBloc extends Bloc<WorkersEvent, WorkersState> {
   }
 
   final TeamService _service;
+  final AuthService _authService;
+  final OnboardingService _onboardingService;
 
   Future<void> _onLoadWorkers(
     LoadWorkers event,
@@ -143,12 +152,34 @@ class WorkersBloc extends Bloc<WorkersEvent, WorkersState> {
     }
 
     try {
-      final List<Worker> workers = await _service.getWorkers();
-      workers.sort(
+      // 1. Obtener todos los workers del API
+      final List<Worker> allWorkers = await _service.getWorkers();
+      
+      // 2. Obtener el providerId del usuario logueado
+      int? providerId;
+      final userId = await _onboardingService.getUserId();
+      if (userId != null) {
+        final token = await _onboardingService.getJwtToken();
+        if (token != null) {
+          final provider = await _authService.getProviderByUserId(
+            userId: userId,
+            token: token,
+          );
+          providerId = provider?.id;
+        }
+      }
+
+      // 3. Filtrar workers por providerId
+      final filteredWorkers = providerId != null
+          ? allWorkers.where((worker) => worker.providerId == providerId).toList()
+          : <Worker>[];
+      
+      // 4. Ordenar alfabéticamente
+      filteredWorkers.sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
 
-      emit(state.copyWith(status: WorkersStatus.success, workers: workers));
+      emit(state.copyWith(status: WorkersStatus.success, workers: filteredWorkers));
     } catch (error) {
       emit(
         state.copyWith(

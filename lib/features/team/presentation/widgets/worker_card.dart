@@ -116,29 +116,9 @@ class WorkerCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       if (worker.specialization.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF7209B7).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFF7209B7).withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            worker.specialization,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF7209B7),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        _buildSpecializations(worker.specialization),
                     ],
                   ),
                 ),
@@ -159,5 +139,48 @@ class WorkerCard extends StatelessWidget {
     final last = parts.last.isNotEmpty ? parts.last[0].toUpperCase() : '';
     final initials = '$first$last';
     return initials.isEmpty ? '?' : initials;
+  }
+
+  Widget _buildSpecializations(String specialization) {
+    // Parsear las especializaciones separadas por ", "
+    final specializations = specialization
+        .split(', ')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .take(3) // Máximo 3 especializaciones
+        .toList();
+
+    if (specializations.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: specializations.map((spec) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFF7209B7).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: const Color(0xFF7209B7).withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            spec,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF7209B7),
+              letterSpacing: -0.1,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      }).toList(),
+    );
   }
 }

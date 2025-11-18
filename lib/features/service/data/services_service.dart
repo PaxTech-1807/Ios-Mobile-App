@@ -2,28 +2,40 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:iosmobileapp/core/services/onboarding_service.dart';
+import 'package:iosmobileapp/features/auth/data/auth_service.dart';
 import 'package:iosmobileapp/features/service/domain/service.dart';
 
 class ServicesService {
   ServicesService({http.Client? client, String? authToken})
     : _client = client ?? http.Client(),
-      _authToken = authToken ?? _defaultToken;
+      _authToken = authToken,
+      _onboardingService = OnboardingService();
 
   final http.Client _client;
-  final String _authToken;
+  final String? _authToken;
+  final OnboardingService _onboardingService;
 
   static const String _baseUrl =
       'https://paxtech.azurewebsites.net/api/v1/services';
-  static const String _defaultToken =
-      'eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJzdHJpbmc1IiwiaWF0IjoxNzYyNzI1OTUwLCJleHAiOjE3NjMzMzA3NTB9.c30pouhMQDJJxIAMUGi-m0nAvqJ_em0-CRA3zMig9DWGYagvmfC0rkZDSHT1j64q';
 
-  Map<String, String> get _headers => {
-    HttpHeaders.authorizationHeader: 'Bearer $_authToken',
-    HttpHeaders.contentTypeHeader: 'application/json',
-  };
+  Future<Map<String, String>> get _headers async {
+    final token = _authToken ?? await _onboardingService.getJwtToken();
+    if (token == null || token.isEmpty) {
+      throw HttpException(
+        'No se encontró token de autenticación. Por favor inicia sesión nuevamente.',
+        uri: Uri.parse(_baseUrl),
+      );
+    }
+    return {
+      HttpHeaders.authorizationHeader: 'Bearer $token',
+      HttpHeaders.contentTypeHeader: 'application/json',
+    };
+  }
 
   Future<List<Service>> getServices() async {
-    final response = await _client.get(Uri.parse(_baseUrl), headers: _headers);
+    final headers = await _headers;
+    final response = await _client.get(Uri.parse(_baseUrl), headers: headers);
 
     if (response.statusCode == HttpStatus.ok) {
       if (response.body.isEmpty) {
@@ -52,10 +64,26 @@ class ServicesService {
   }
 
   Future<Service> createService(ServiceRequest request) async {
-    final payload = request.copyWith(providerId: 1).toJson();
+    final headers = await _headers;
+    // Obtener providerId del usuario logueado
+    final userId = await _onboardingService.getUserId();
+    int? providerId;
+    if (userId != null) {
+      final token = await _onboardingService.getJwtToken();
+      if (token != null) {
+        final authService = AuthService();
+        final provider = await authService.getProviderByUserId(
+          userId: userId,
+          token: token,
+        );
+        providerId = provider?.id;
+      }
+    }
+    
+    final payload = request.copyWith(providerId: providerId ?? 1).toJson();
     final response = await _client.post(
       Uri.parse(_baseUrl),
-      headers: _headers,
+      headers: headers,
       body: jsonEncode(payload),
     );
 
@@ -76,11 +104,27 @@ class ServicesService {
     required int serviceId,
     required ServiceRequest request,
   }) async {
+    final headers = await _headers;
+    // Obtener providerId del usuario logueado
+    final userId = await _onboardingService.getUserId();
+    int? providerId;
+    if (userId != null) {
+      final token = await _onboardingService.getJwtToken();
+      if (token != null) {
+        final authService = AuthService();
+        final provider = await authService.getProviderByUserId(
+          userId: userId,
+          token: token,
+        );
+        providerId = provider?.id;
+      }
+    }
+    
     final uri = Uri.parse('$_baseUrl/$serviceId');
-    final payload = request.copyWith(providerId: 1).toJson();
+    final payload = request.copyWith(providerId: providerId ?? 1).toJson();
     final response = await _client.put(
       uri,
-      headers: _headers,
+      headers: headers,
       body: jsonEncode(payload),
     );
 
@@ -97,8 +141,9 @@ class ServicesService {
   }
 
   Future<void> deleteService(int serviceId) async {
+    final headers = await _headers;
     final uri = Uri.parse('$_baseUrl/$serviceId');
-    final response = await _client.delete(uri, headers: _headers);
+    final response = await _client.delete(uri, headers: headers);
 
     if (response.statusCode == HttpStatus.ok ||
         response.statusCode == HttpStatus.noContent) {

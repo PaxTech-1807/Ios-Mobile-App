@@ -40,7 +40,7 @@ class ServiceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -91,19 +91,24 @@ class ServiceCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 5),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          _InfoBadge(
-                            icon: Icons.access_time,
-                            value: '${service.duration} min',
-                            color: const Color(0xFF7209B7),
+                          Expanded(
+                            child: _InfoBadge(
+                              icon: Icons.access_time,
+                              value: '${service.duration} min',
+                              color: const Color(0xFF7209B7),
+                            ),
                           ),
                           const SizedBox(width: 8),
-                          _InfoBadge(
-                            icon: null,
-                            value: _formatPrice(service.price),
-                            color: const Color(0xFF9D4EDD),
+                          Expanded(
+                            child: _InfoBadge(
+                              icon: null,
+                              value: _formatPrice(service.price),
+                              color: const Color(0xFF9D4EDD),
+                            ),
                           ),
                         ],
                       ),
@@ -137,7 +142,7 @@ class _InfoBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
@@ -147,22 +152,28 @@ class _InfoBadge extends StatelessWidget {
         ),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
             Icon(
               icon,
-              size: 12,
+              size: 11,
               color: color,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 3),
           ],
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color,
+          Flexible(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

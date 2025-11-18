@@ -142,36 +142,7 @@ class _WorkerModalState extends State<WorkerModal> {
                               ),
                               const SizedBox(height: 8),
                               if (widget.worker.specialization.isNotEmpty)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF7209B7).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFF7209B7).withOpacity(0.2),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.work_outline,
-                                        size: 16,
-                                        color: const Color(0xFF7209B7),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        widget.worker.specialization,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF7209B7),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                _buildSpecializations(widget.worker.specialization),
                             ],
                           ),
                         ),
@@ -245,11 +216,62 @@ class _WorkerModalState extends State<WorkerModal> {
     );
   }
 
+  Widget _buildSpecializations(String specialization) {
+    // Parsear las especializaciones separadas por ", "
+    final specializations = specialization
+        .split(', ')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .take(3) // Máximo 3 especializaciones
+        .toList();
+
+    if (specializations.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: specializations.map((spec) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF7209B7).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFF7209B7).withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.work_outline,
+                size: 14,
+                color: const Color(0xFF7209B7),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                spec,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF7209B7),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Future<void> _confirmDelete(BuildContext context) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar miembro'),
+        title: const Text('Eliminar trabajador'),
         content: Text('¿Eliminar a ${widget.worker.name}?'),
         actions: [
           TextButton(
