@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/services/onboarding_service.dart';
 import '../../data/geocoding_service.dart';
@@ -160,6 +161,79 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
     }
   }
 
+  Future<void> _uploadProfileImage() async {
+    if (_profile == null) return;
+
+    print('📸 [ProfileDetailsPage] Iniciando selección de imagen...');
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image == null) {
+        print('⚠️ [ProfileDetailsPage] Usuario canceló selección de imagen');
+        return;
+      }
+
+      print('📁 [ProfileDetailsPage] Imagen seleccionada: ${image.path}');
+
+      // Mostrar loading dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF7209B7),
+            ),
+          ),
+        );
+      }
+
+      // Subir imagen (XFile funciona en web y móvil)
+      final updatedProfile = await _profileService.uploadProfileImage(
+        imageFile: image,
+        profileId: _profile!.id,
+      );
+
+      print('✅ [ProfileDetailsPage] Imagen subida exitosamente');
+
+      if (mounted) {
+        Navigator.pop(context); // Cerrar loading dialog
+
+        setState(() {
+          _profile = updatedProfile;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Imagen de perfil actualizada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ [ProfileDetailsPage] Error al subir imagen: $e');
+
+      if (mounted) {
+        // Intentar cerrar loading dialog si está abierto
+        Navigator.of(context).popUntil((route) => route.isFirst);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir imagen: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   String _getInitials(String? name) {
     if (name == null || name.isEmpty) return '?';
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -221,7 +295,12 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ProfileIdentityCard(companyName: _companyName, getInitials: _getInitials),
+            _ProfileIdentityCard(
+              companyName: _companyName,
+              profile: _profile,
+              getInitials: _getInitials,
+              onImageTap: _uploadProfileImage,
+            ),
             const SizedBox(height: 20),
             _InfoSectionCard(
               title: 'Información del negocio',
@@ -320,11 +399,15 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
 class _ProfileIdentityCard extends StatelessWidget {
   const _ProfileIdentityCard({
     required this.companyName,
+    required this.profile,
     required this.getInitials,
+    required this.onImageTap,
   });
 
   final String? companyName;
+  final ProviderProfile? profile;
   final String Function(String?) getInitials;
+  final VoidCallback onImageTap;
 
   @override
   Widget build(BuildContext context) {
@@ -357,26 +440,63 @@ class _ProfileIdentityCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 2,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                getInitials(companyName),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+          GestureDetector(
+            onTap: onImageTap,
+            child: Stack(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
+                    image: profile?.profileImageUrl != null &&
+                            profile!.profileImageUrl != 'to Choose' &&
+                            profile!.profileImageUrl!.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(profile!.profileImageUrl!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: profile?.profileImageUrl == null ||
+                          profile!.profileImageUrl == 'to Choose' ||
+                          profile!.profileImageUrl!.isEmpty
+                      ? Center(
+                          child: Text(
+                            getInitials(companyName),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
-              ),
+                // Icono de cámara en la esquina
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7209B7),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 16),

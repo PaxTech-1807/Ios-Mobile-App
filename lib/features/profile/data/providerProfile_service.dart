@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:iosmobileapp/core/api_constants.dart';
 import 'package:iosmobileapp/core/services/onboarding_service.dart';
 import 'package:iosmobileapp/features/profile/domain/providerProfile.dart';
@@ -181,6 +183,98 @@ class ProviderprofileService {
       );
     } catch (e) {
       print('💥 [ProfileService] Error en getCurrentProfile: $e');
+      rethrow;
+    }
+  }
+
+  /// Sube una imagen de perfil al servidor
+  /// Retorna el perfil actualizado con la nueva URL de la imagen
+  /// Acepta XFile para compatibilidad con Web y móvil
+  Future<ProviderProfile> uploadProfileImage({
+    required XFile imageFile,
+    required int profileId,
+  }) async {
+    try {
+      print(
+        '📤 [ProfileService] Subiendo imagen de perfil para profile ID: $profileId',
+      );
+
+      // Leer bytes del archivo (funciona en web y móvil)
+      final bytes = await imageFile.readAsBytes();
+      final fileSize = bytes.length;
+      final fileSizeMB = fileSize / (1024 * 1024);
+      print(
+        '📏 [ProfileService] Tamaño del archivo: ${fileSizeMB.toStringAsFixed(2)} MB',
+      );
+
+      if (fileSize > 5 * 1024 * 1024) {
+        throw Exception(
+          'La imagen es demasiado grande. Tamaño máximo: 5MB. '
+          'Tamaño actual: ${fileSizeMB.toStringAsFixed(2)} MB',
+        );
+      }
+
+      final token = await _onboardingService.getJwtToken();
+      if (token == null || token.isEmpty) {
+        throw HttpException(
+          'No se encontró token de autenticación.',
+          uri: Uri.parse(ApiConstants.providerProfileEndpoint),
+        );
+      }
+
+      final uri = Uri.parse(
+        '${ApiConstants.providerProfileEndpoint}/$profileId/profile-image',
+      );
+
+      print('🌐 [ProfileService] POST: $uri');
+
+      var request = http.MultipartRequest('POST', uri);
+
+      // Agregar headers de autenticación
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Detectar el tipo MIME del archivo
+      String mimeType = imageFile.mimeType ?? 'image/jpeg';
+      print(
+        '📎 [ProfileService] Tipo de archivo: $mimeType, nombre: ${imageFile.name}',
+      );
+
+      // Agregar la imagen usando bytes (compatible con web y móvil)
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file', // nombre del campo esperado por el backend
+          bytes,
+          filename: imageFile.name,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+
+      print('⏳ [ProfileService] Enviando imagen...');
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📊 [ProfileService] Status Code: ${response.statusCode}');
+      print('📄 [ProfileService] Response: ${response.body}');
+
+      if (response.statusCode == HttpStatus.ok) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final updatedProfile = ProviderProfile.fromJson(json);
+
+        print('✅ [ProfileService] Imagen subida exitosamente');
+        print(
+          '🖼️ [ProfileService] Nueva URL: ${updatedProfile.profileImageUrl}',
+        );
+
+        return updatedProfile;
+      }
+
+      throw HttpException(
+        'Error al subir imagen. Status code: ${response.statusCode}',
+        uri: uri,
+      );
+    } catch (e) {
+      print('💥 [ProfileService] Error en uploadProfileImage: $e');
       rethrow;
     }
   }
