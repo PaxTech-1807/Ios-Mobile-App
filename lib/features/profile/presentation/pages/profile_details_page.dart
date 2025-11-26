@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/services/onboarding_service.dart';
-import '../widgets/profile_info_row.dart';
-import '../widgets/profile_section_card.dart';
+import '../../data/geocoding_service.dart';
+import '../../data/providerProfile_service.dart';
+import '../../domain/providerProfile.dart';
+import '../widgets/location_search_dialog.dart';
 
 class ProfileDetailsPage extends StatefulWidget {
   const ProfileDetailsPage({super.key});
@@ -13,20 +15,148 @@ class ProfileDetailsPage extends StatefulWidget {
 
 class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
   final _onboardingService = OnboardingService();
+  final _profileService = ProviderprofileService();
+  final _geocodingService = GeocodingService();
   String? _companyName;
+  ProviderProfile? _profile;
+  String? _locationAddress;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadCompanyName();
+    _loadProfile();
   }
 
-  Future<void> _loadCompanyName() async {
-    final companyName = await _onboardingService.getCompanyName();
-    if (mounted) {
-      setState(() {
-        _companyName = companyName;
-      });
+  Future<void> _loadProfile() async {
+    print('🔄 [ProfileDetailsPage] Iniciando carga de perfil...');
+    
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      print('📝 [ProfileDetailsPage] Obteniendo nombre de empresa...');
+      final companyName = await _onboardingService.getCompanyName();
+      print('✅ [ProfileDetailsPage] Nombre de empresa: $companyName');
+      
+      print('👤 [ProfileDetailsPage] Obteniendo perfil completo...');
+      final profile = await _profileService.getCurrentProfile();
+      print('✅ [ProfileDetailsPage] Perfil obtenido: providerId=${profile.providerId}, location="${profile.location}"');
+
+      // Si la ubicación tiene formato lat,long, convertirla a dirección legible
+      String? locationAddress;
+      if (profile.location.isNotEmpty && profile.location.contains(',')) {
+        try {
+          final parts = profile.location.split(',');
+          if (parts.length == 2) {
+            final lat = double.parse(parts[0].trim());
+            final lon = double.parse(parts[1].trim());
+            
+            print('🗺️ [ProfileDetailsPage] Convirtiendo coordenadas a dirección...');
+            locationAddress = await _geocodingService.reverseGeocode(lat, lon);
+            print('✅ [ProfileDetailsPage] Dirección obtenida: $locationAddress');
+          }
+        } catch (e) {
+          print('⚠️ [ProfileDetailsPage] Error al convertir coordenadas: $e');
+          // Si falla, usar las coordenadas como están
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _companyName = companyName;
+          _profile = profile;
+          _locationAddress = locationAddress;
+          _isLoading = false;
+        });
+        print('✅ [ProfileDetailsPage] Estado actualizado correctamente');
+      }
+    } catch (e) {
+      print('❌ [ProfileDetailsPage] Error al cargar perfil: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar perfil: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateLocation(String newLocation) async {
+    print('📍 [ProfileDetailsPage] Iniciando actualización de ubicación a: "$newLocation"');
+    
+    try {
+      final updatedProfile = await _profileService.updateProfileLocation(
+        location: newLocation,
+      );
+      
+      print('✅ [ProfileDetailsPage] Ubicación actualizada correctamente');
+
+      // Convertir las coordenadas a dirección legible
+      String? locationAddress;
+      if (newLocation.contains(',')) {
+        try {
+          final parts = newLocation.split(',');
+          if (parts.length == 2) {
+            final lat = double.parse(parts[0].trim());
+            final lon = double.parse(parts[1].trim());
+            
+            print('🗺️ [ProfileDetailsPage] Convirtiendo nuevas coordenadas a dirección...');
+            locationAddress = await _geocodingService.reverseGeocode(lat, lon);
+            print('✅ [ProfileDetailsPage] Nueva dirección: $locationAddress');
+          }
+        } catch (e) {
+          print('⚠️ [ProfileDetailsPage] Error al convertir coordenadas: $e');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _profile = updatedProfile;
+          _locationAddress = locationAddress;
+        });
+        print('✅ [ProfileDetailsPage] Estado actualizado con nueva ubicación');
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ubicación actualizada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ [ProfileDetailsPage] Error al actualizar ubicación: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar ubicación: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showEditLocationDialog() async {
+    print('📍 [ProfileDetailsPage] Abriendo diálogo de ubicación');
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => LocationSearchDialog(
+        initialLocation: _profile?.location,
+      ),
+    );
+
+    print('📍 [ProfileDetailsPage] Resultado del diálogo: $result');
+
+    if (result != null && result.isNotEmpty && result != _profile?.location) {
+      await _updateLocation(result);
     }
   }
 
@@ -44,6 +174,20 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          title: const Text('Perfil del negocio'),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF7209B7),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -146,6 +290,26 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
               ],
             ),
             const SizedBox(height: 20),
+            _InfoSectionCard(
+              title: 'Ubicación',
+              trailing: IconButton(
+                icon: const Icon(
+                  Icons.edit,
+                  color: Color(0xFF7209B7),
+                  size: 20,
+                ),
+                onPressed: _showEditLocationDialog,
+              ),
+              children: [
+                _InfoRow(
+                  icon: Icons.add_location_alt_outlined,
+                  label: 'Dirección',
+                  value: _profile?.location.isEmpty ?? true
+                      ? 'No configurada'
+                      : _locationAddress ?? _profile!.location,
+                ),
+              ],
+            )
           ],
         ),
       ),
@@ -252,10 +416,12 @@ class _InfoSectionCard extends StatelessWidget {
   const _InfoSectionCard({
     required this.title,
     required this.children,
+    this.trailing,
   });
 
   final String title;
   final List<Widget> children;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -275,13 +441,19 @@ class _InfoSectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
           ),
           const SizedBox(height: 16),
           ...children,
