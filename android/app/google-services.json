@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "926361378609",
+    "project_id": "paxtechandroid",
+    "storage_bucket": "paxtechandroid.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:926361378609:android:89ad0df94b9d2275bfda10",
+        "android_client_info": {
+          "package_name": "com.example.iosmobileapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwoSxit3B1cH_YvOOdFXeBn3rxqK8xyXU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:926361378609:android:a84ac4062d1a098abfda10",
+        "android_client_info": {
+          "package_name": "com.paxtech.mobileapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwoSxit3B1cH_YvOOdFXeBn3rxqK8xyXU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
