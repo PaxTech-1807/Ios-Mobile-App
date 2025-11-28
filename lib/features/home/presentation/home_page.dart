@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iosmobileapp/core/services/onboarding_service.dart';
+import 'package:iosmobileapp/features/profile/data/geocoding_service.dart';
+import 'package:iosmobileapp/features/profile/data/providerProfile_service.dart';
+import 'package:iosmobileapp/features/profile/domain/providerProfile.dart';
 import 'package:iosmobileapp/features/reviews/presentation/blocs/reviews_bloc.dart';
 import 'package:iosmobileapp/features/reviews/presentation/blocs/reviews_event.dart';
 import 'package:iosmobileapp/features/reviews/presentation/blocs/reviews_state.dart';
@@ -33,7 +36,11 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   final _onboardingService = OnboardingService();
+  final _profileService = ProviderprofileService();
+  final _geocodingService = GeocodingService();
   String? _companyName;
+  ProviderProfile? _profile;
+  String? _locationAddress;
   int? _selectedRating;
   String? _selectedSort;
 
@@ -41,6 +48,7 @@ class HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadCompanyName();
+    _loadProfile();
   }
 
   Future<void> _loadCompanyName() async {
@@ -50,6 +58,54 @@ class HomePageState extends State<HomePage> {
         _companyName = companyName;
       });
     }
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      print('🏠 [HomePage] Cargando perfil...');
+      final profile = await _profileService.getCurrentProfile();
+      print('✅ [HomePage] Perfil cargado: location="${profile.location}"');
+
+      // Convertir coordenadas a dirección legible si existe
+      String? locationAddress;
+      if (profile.location.isNotEmpty && profile.location.contains(',')) {
+        try {
+          final parts = profile.location.split(',');
+          if (parts.length == 2) {
+            final lat = double.parse(parts[0].trim());
+            final lon = double.parse(parts[1].trim());
+            
+            print('🗺️ [HomePage] Convirtiendo coordenadas a dirección...');
+            locationAddress = await _geocodingService.reverseGeocode(lat, lon);
+            print('✅ [HomePage] Dirección obtenida: $locationAddress');
+          }
+        } catch (e) {
+          print('⚠️ [HomePage] Error al convertir coordenadas: $e');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+          _locationAddress = locationAddress;
+        });
+      }
+    } catch (e) {
+      print('❌ [HomePage] Error al cargar perfil: $e');
+      // No mostrar error al usuario, simplemente no mostrar ubicación
+    }
+  }
+
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return '?';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length == 1) {
+      return parts.first.isNotEmpty ? parts.first[0].toUpperCase() : '?';
+    }
+    final first = parts.first.isNotEmpty ? parts.first[0].toUpperCase() : '';
+    final last = parts.last.isNotEmpty ? parts.last[0].toUpperCase() : '';
+    final initials = '$first$last';
+    return initials.isEmpty ? '?' : initials;
   }
 
 
@@ -71,6 +127,9 @@ class HomePageState extends State<HomePage> {
       ],
       child: _HomePageContent(
         companyName: _companyName,
+        profile: _profile,
+        locationAddress: _locationAddress,
+        getInitials: _getInitials,
         selectedRating: _selectedRating,
         selectedSort: _selectedSort,
         onRatingChanged: (rating) {
@@ -91,6 +150,9 @@ class HomePageState extends State<HomePage> {
 class _HomePageContent extends StatelessWidget {
   const _HomePageContent({
     required this.companyName,
+    required this.profile,
+    required this.locationAddress,
+    required this.getInitials,
     required this.selectedRating,
     required this.selectedSort,
     required this.onRatingChanged,
@@ -98,6 +160,9 @@ class _HomePageContent extends StatelessWidget {
   });
 
   final String? companyName;
+  final ProviderProfile? profile;
+  final String? locationAddress;
+  final String Function(String?) getInitials;
   final int? selectedRating;
   final String? selectedSort;
   final ValueChanged<int?> onRatingChanged;
@@ -114,6 +179,11 @@ class _HomePageContent extends StatelessWidget {
               context.read<ReviewsBloc>().add(const LoadReviewsRequested());
               context.read<WorkersBloc>().add(const LoadWorkers());
               context.read<ServicesBloc>().add(const LoadServices());
+              // Recargar perfil también
+              if (context.mounted) {
+                final state = context.findAncestorStateOfType<HomePageState>();
+                state?.._loadProfile();
+              }
               // Esperar un poco para que se complete el refresh
               await Future.delayed(const Duration(milliseconds: 500));
             },
@@ -162,12 +232,33 @@ class _HomePageContent extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        image: profile?.profileImageUrl != null &&
+                                profile!.profileImageUrl != 'to Choose' &&
+                                profile!.profileImageUrl!.isNotEmpty
+                            ? DecorationImage(
+                                image: NetworkImage(profile!.profileImageUrl!),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                       ),
-                      child: const Icon(
-                        Icons.store_mall_directory,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                      child: profile?.profileImageUrl == null ||
+                              profile!.profileImageUrl == 'to Choose' ||
+                              profile!.profileImageUrl!.isEmpty
+                          ? Center(
+                              child: Text(
+                                getInitials(companyName),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                          : null,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -194,12 +285,19 @@ class _HomePageContent extends StatelessWidget {
                                 color: Colors.white.withOpacity(0.9),
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                'Ciudad de México, CDMX',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontWeight: FontWeight.w500,
+                              Flexible(
+                                child: Text(
+                                  locationAddress ??
+                                      (profile?.location.isNotEmpty ?? false
+                                          ? profile!.location
+                                          : 'Ubicación no configurada'),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],

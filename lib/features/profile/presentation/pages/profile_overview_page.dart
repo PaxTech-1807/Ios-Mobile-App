@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/services/onboarding_service.dart';
 import '../../../auth/presentation/login_screen.dart';
+import '../../data/geocoding_service.dart';
+import '../../data/providerProfile_service.dart';
+import '../../domain/providerProfile.dart';
 import '../widgets/profile_menu_item.dart';
 import 'profile_details_page.dart';
 import 'profile_notifications_page.dart';
@@ -17,13 +20,18 @@ class ProfileOverviewPage extends StatefulWidget {
 
 class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
   final _onboardingService = OnboardingService();
+  final _profileService = ProviderprofileService();
+  final _geocodingService = GeocodingService();
   String? _companyName;
+  ProviderProfile? _profile;
+  String? _locationAddress;
   bool _isOpen = true; // Estado del salón
 
   @override
   void initState() {
     super.initState();
     _loadCompanyName();
+    _loadProfile();
   }
 
   Future<void> _loadCompanyName() async {
@@ -32,6 +40,42 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
       setState(() {
         _companyName = companyName;
       });
+    }
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      print('👤 [ProfileOverviewPage] Cargando perfil...');
+      final profile = await _profileService.getCurrentProfile();
+      print('✅ [ProfileOverviewPage] Perfil cargado: location="${profile.location}"');
+
+      // Convertir coordenadas a dirección legible si existe
+      String? locationAddress;
+      if (profile.location.isNotEmpty && profile.location.contains(',')) {
+        try {
+          final parts = profile.location.split(',');
+          if (parts.length == 2) {
+            final lat = double.parse(parts[0].trim());
+            final lon = double.parse(parts[1].trim());
+            
+            print('🗺️ [ProfileOverviewPage] Convirtiendo coordenadas a dirección...');
+            locationAddress = await _geocodingService.reverseGeocode(lat, lon);
+            print('✅ [ProfileOverviewPage] Dirección obtenida: $locationAddress');
+          }
+        } catch (e) {
+          print('⚠️ [ProfileOverviewPage] Error al convertir coordenadas: $e');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+          _locationAddress = locationAddress;
+        });
+      }
+    } catch (e) {
+      print('❌ [ProfileOverviewPage] Error al cargar perfil: $e');
+      // No mostrar error al usuario, simplemente no mostrar ubicación
     }
   }
 
@@ -132,6 +176,8 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
               // Profile Summary Card (más compacta)
               _ProfileSummaryCard(
                 companyName: _companyName,
+                profile: _profile,
+                locationAddress: _locationAddress,
                 getInitials: _getInitials,
               ),
               const SizedBox(height: 12),
@@ -292,10 +338,14 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
 class _ProfileSummaryCard extends StatelessWidget {
   const _ProfileSummaryCard({
     required this.companyName,
+    required this.profile,
+    required this.locationAddress,
     required this.getInitials,
   });
 
   final String? companyName;
+  final ProviderProfile? profile;
+  final String? locationAddress;
   final String Function(String?) getInitials;
 
   @override
@@ -340,17 +390,29 @@ class _ProfileSummaryCard extends StatelessWidget {
                 color: Colors.white.withOpacity(0.3),
                 width: 2,
               ),
+              image: profile?.profileImageUrl != null &&
+                      profile!.profileImageUrl != 'to Choose' &&
+                      profile!.profileImageUrl!.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(profile!.profileImageUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: Center(
-              child: Text(
-                getInitials(companyName),
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+            child: profile?.profileImageUrl == null ||
+                    profile!.profileImageUrl == 'to Choose' ||
+                    profile!.profileImageUrl!.isEmpty
+                ? Center(
+                    child: Text(
+                      getInitials(companyName),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -368,13 +430,30 @@ class _ProfileSummaryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Cuenta de empresa',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withOpacity(0.9),
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 14,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        locationAddress ??
+                            (profile?.location.isNotEmpty ?? false
+                                ? profile!.location
+                                : 'Ubicación no configurada'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

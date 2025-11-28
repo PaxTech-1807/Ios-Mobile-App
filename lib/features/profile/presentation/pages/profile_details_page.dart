@@ -312,12 +312,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                 ),
                 const SizedBox(height: 16),
                 _InfoRow(
-                  icon: Icons.place_outlined,
-                  label: 'Dirección',
-                  value: 'Av. Primavera 123, San Borja',
-                ),
-                const SizedBox(height: 16),
-                _InfoRow(
                   icon: Icons.phone_outlined,
                   label: 'Número de celular',
                   value: '+51 987654321',
