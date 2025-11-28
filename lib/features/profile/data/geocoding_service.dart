@@ -113,6 +113,71 @@ class GeocodingService {
       return null;
     }
   }
+
+  /// Valida una dirección manual ingresada por el usuario
+  /// Intenta convertirla a coordenadas y luego hacer reverse geocoding
+  /// Retorna las coordenadas en formato "lat,long" si es válida, null si no
+  Future<String?> validateAndGeocodeAddress(String address) async {
+    if (address.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      print('🔍 [GeocodingService] Validando dirección manual: "$address"');
+
+      // Primero intentar geocodificar la dirección (dirección -> coordenadas)
+      final uri = Uri.parse('$_nominatimBaseUrl/search').replace(
+        queryParameters: {
+          'q': address,
+          'format': 'json',
+          'addressdetails': '1',
+          'limit': '1',
+          'countrycodes': 'pe',
+        },
+      );
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'User-Agent': 'IosMobileApp/1.0',
+        },
+      );
+
+      print('📊 [GeocodingService] Status: ${response.statusCode}');
+
+      if (response.statusCode == HttpStatus.ok) {
+        final List<dynamic> jsonList = jsonDecode(response.body) as List<dynamic>;
+        
+        if (jsonList.isEmpty) {
+          print('❌ [GeocodingService] No se encontraron resultados para la dirección');
+          return null;
+        }
+
+        final result = jsonList.first as Map<String, dynamic>;
+        final lat = double.parse(result['lat'] as String);
+        final lon = double.parse(result['lon'] as String);
+
+        print('✅ [GeocodingService] Coordenadas encontradas: $lat,$lon');
+
+        // Hacer reverse geocoding para verificar que las coordenadas son válidas
+        final verifiedAddress = await reverseGeocode(lat, lon);
+        
+        if (verifiedAddress != null) {
+          print('✅ [GeocodingService] Dirección validada: $verifiedAddress');
+          return '$lat,$lon';
+        } else {
+          print('❌ [GeocodingService] No se pudo verificar la dirección');
+          return null;
+        }
+      }
+
+      print('❌ [GeocodingService] Error en la petición: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      print('💥 [GeocodingService] Exception en validateAndGeocodeAddress: $e');
+      return null;
+    }
+  }
 }
 
 

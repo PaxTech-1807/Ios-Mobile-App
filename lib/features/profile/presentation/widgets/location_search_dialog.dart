@@ -22,8 +22,10 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
   List<LocationSuggestion> _suggestions = [];
   bool _isSearching = false;
   bool _isLoadingCurrentLocation = false;
+  bool _isValidating = false;
   String? _selectedLatLong;
   String? _selectedAddress;
+  String? _validationError;
 
   @override
   void initState() {
@@ -148,7 +150,68 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
       _selectedAddress = suggestion.displayName;
       _searchController.text = suggestion.displayName;
       _suggestions = [];
+      _validationError = null;
     });
+  }
+
+  Future<void> _validateAndSaveManualAddress() async {
+    final address = _searchController.text.trim();
+    
+    if (address.isEmpty) {
+      setState(() {
+        _validationError = 'Por favor ingresa una dirección';
+      });
+      return;
+    }
+
+    setState(() {
+      _isValidating = true;
+      _validationError = null;
+    });
+
+    try {
+      // Validar y geocodificar la dirección manual
+      final latLong = await _geocodingService.validateAndGeocodeAddress(address);
+
+      if (latLong != null) {
+        // Obtener la dirección verificada
+        final parts = latLong.split(',');
+        if (parts.length == 2) {
+          final lat = double.parse(parts[0].trim());
+          final lon = double.parse(parts[1].trim());
+          
+          final verifiedAddress = await _geocodingService.reverseGeocode(lat, lon);
+          
+          if (mounted) {
+            setState(() {
+              _selectedLatLong = latLong;
+              _selectedAddress = verifiedAddress ?? address;
+              _searchController.text = verifiedAddress ?? address;
+              _suggestions = [];
+              _isValidating = false;
+              _validationError = null;
+            });
+            
+            // Guardar automáticamente si es válida
+            Navigator.pop(context, latLong);
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isValidating = false;
+            _validationError = 'No se pudo encontrar una ubicación válida para esta dirección. Por favor intenta con otra dirección o selecciona una de las sugerencias.';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isValidating = false;
+          _validationError = 'Error al validar la dirección: ${e.toString()}';
+        });
+      }
+    }
   }
 
   @override
@@ -178,7 +241,7 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Buscar dirección',
+                labelText: 'Buscar o escribir dirección',
                 hintText: 'Ej: Av. Larco 1234, Miraflores',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
@@ -194,8 +257,24 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
                         ),
                       )
                     : null,
+                errorText: _validationError,
+                errorMaxLines: 3,
               ),
-              onChanged: _searchAddress,
+              onChanged: (value) {
+                _searchAddress(value);
+                // Limpiar error cuando el usuario empiece a escribir
+                if (_validationError != null) {
+                  setState(() {
+                    _validationError = null;
+                  });
+                }
+              },
+              onSubmitted: (value) {
+                // Si el usuario presiona Enter y no hay sugerencias, intentar validar
+                if (_suggestions.isEmpty && value.trim().isNotEmpty) {
+                  _validateAndSaveManualAddress();
+                }
+              },
             ),
             const SizedBox(height: 12),
 
@@ -259,8 +338,37 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
                 ),
               ),
 
+            // Loading de validación
+            if (_isValidating)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Validando dirección...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             // Ubicación seleccionada
-            if (_selectedLatLong != null && _suggestions.isEmpty)
+            if (_selectedLatLong != null && _suggestions.isEmpty && !_isValidating)
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -304,19 +412,32 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _isValidating ? null : () => Navigator.pop(context),
                   child: const Text('Cancelar'),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: _selectedLatLong != null
-                      ? () => Navigator.pop(context, _selectedLatLong)
-                      : null,
+                  onPressed: _isValidating
+                      ? null
+                      : (_selectedLatLong != null
+                          ? () => Navigator.pop(context, _selectedLatLong)
+                          : (_searchController.text.trim().isNotEmpty
+                              ? _validateAndSaveManualAddress
+                              : null)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7209B7),
                     disabledBackgroundColor: Colors.grey,
                   ),
-                  child: const Text('Guardar'),
+                  child: _isValidating
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Guardar'),
                 ),
               ],
             ),
