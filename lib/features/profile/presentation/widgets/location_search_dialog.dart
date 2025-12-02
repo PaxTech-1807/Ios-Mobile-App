@@ -249,7 +249,7 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    'Seleccionar Ubicación',
+                    'Seleccionar ubicación',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

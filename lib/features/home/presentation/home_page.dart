@@ -17,6 +17,7 @@ import 'package:iosmobileapp/features/team/presentation/blocs/workers_bloc.dart'
 import 'package:iosmobileapp/features/team/presentation/blocs/workers_event.dart';
 import 'package:iosmobileapp/features/team/presentation/blocs/workers_state.dart';
 import 'package:iosmobileapp/features/team/data/team_service.dart';
+import 'package:iosmobileapp/features/discounts/data/discounts_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -38,17 +39,20 @@ class HomePageState extends State<HomePage> {
   final _onboardingService = OnboardingService();
   final _profileService = ProviderprofileService();
   final _geocodingService = GeocodingService();
+  final _discountsService = DiscountsService();
   String? _companyName;
   ProviderProfile? _profile;
   String? _locationAddress;
   int? _selectedRating;
   String? _selectedSort;
+  int _discountsCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadCompanyName();
     _loadProfile();
+    _loadDiscountsCount();
   }
 
   Future<void> _loadCompanyName() async {
@@ -96,6 +100,20 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _loadDiscountsCount() async {
+    try {
+      final discounts = await _discountsService.getDiscounts();
+      if (mounted) {
+        setState(() {
+          _discountsCount = discounts.length;
+        });
+      }
+    } catch (e) {
+      print('❌ [HomePage] Error al cargar cantidad de cupones: $e');
+      // No mostrar error, simplemente dejar en 0
+    }
+  }
+
   String _getInitials(String? name) {
     if (name == null || name.isEmpty) return '?';
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -132,6 +150,7 @@ class HomePageState extends State<HomePage> {
         getInitials: _getInitials,
         selectedRating: _selectedRating,
         selectedSort: _selectedSort,
+        discountsCount: _discountsCount,
         onRatingChanged: (rating) {
           setState(() {
             _selectedRating = rating;
@@ -155,6 +174,7 @@ class _HomePageContent extends StatelessWidget {
     required this.getInitials,
     required this.selectedRating,
     required this.selectedSort,
+    required this.discountsCount,
     required this.onRatingChanged,
     required this.onSortChanged,
   });
@@ -165,6 +185,7 @@ class _HomePageContent extends StatelessWidget {
   final String Function(String?) getInitials;
   final int? selectedRating;
   final String? selectedSort;
+  final int discountsCount;
   final ValueChanged<int?> onRatingChanged;
   final ValueChanged<String?> onSortChanged;
 
@@ -179,10 +200,11 @@ class _HomePageContent extends StatelessWidget {
               context.read<ReviewsBloc>().add(const LoadReviewsRequested());
               context.read<WorkersBloc>().add(const LoadWorkers());
               context.read<ServicesBloc>().add(const LoadServices());
-              // Recargar perfil también
+              // Recargar perfil y cupones también
               if (context.mounted) {
                 final state = context.findAncestorStateOfType<HomePageState>();
-                state?.._loadProfile();
+                state?._loadProfile();
+                state?._loadDiscountsCount();
               }
               // Esperar un poco para que se complete el refresh
               await Future.delayed(const Duration(milliseconds: 500));
@@ -253,7 +275,7 @@ class _HomePageContent extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            companyName ?? 'Mi Salón',
+                            companyName ?? 'Mi salón',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -366,9 +388,9 @@ class _HomePageContent extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _StatCard(
-                      icon: Icons.trending_up,
-                      label: 'Este mes',
-                      value: '0',
+                      icon: Icons.local_offer_outlined,
+                      label: 'Cupones',
+                      value: discountsCount.toString(),
                       color: const Color(0xFF9D4EDD),
                     ),
                   ),

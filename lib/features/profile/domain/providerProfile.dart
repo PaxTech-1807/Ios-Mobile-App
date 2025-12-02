@@ -9,6 +9,9 @@ class ProviderProfile {
   final String? coverImageUrl;
   final ProfileSocials? socials;
   final List<PortfolioImage> portfolioImages;
+  final String? description;
+  final String? openTime;
+  final String? closeTime;
 
   ProviderProfile({
     required this.id,
@@ -20,6 +23,9 @@ class ProviderProfile {
     this.coverImageUrl,
     this.socials,
     this.portfolioImages = const [],
+    this.description,
+    this.openTime,
+    this.closeTime,
   });
 
   factory ProviderProfile.fromJson(Map<String, dynamic> json) {
@@ -39,6 +45,9 @@ class ProviderProfile {
               ?.map((e) => PortfolioImage.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      description: json['description'] as String?,
+      openTime: json['openTime'] as String?,
+      closeTime: json['closeTime'] as String?,
     );
   }
 
@@ -53,6 +62,9 @@ class ProviderProfile {
       'coverImageUrl': coverImageUrl,
       'socials': socials?.toJson(),
       'portfolioImages': portfolioImages.map((e) => e.toJson()).toList(),
+      'description': description,
+      'openTime': openTime,
+      'closeTime': closeTime,
     };
   }
 
@@ -66,6 +78,9 @@ class ProviderProfile {
       'companyName': companyName,
       'socials': socials?.toJson() ?? {},
       'portfolioImages': portfolioImages.map((e) => e.imageUrl).toList(),
+      'description': description,
+      'openTime': openTime,
+      'closeTime': closeTime,
     };
   }
 
@@ -79,6 +94,9 @@ class ProviderProfile {
     String? coverImageUrl,
     ProfileSocials? socials,
     List<PortfolioImage>? portfolioImages,
+    String? description,
+    String? openTime,
+    String? closeTime,
   }) {
     return ProviderProfile(
       id: id ?? this.id,
@@ -90,6 +108,9 @@ class ProviderProfile {
       coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       socials: socials ?? this.socials,
       portfolioImages: portfolioImages ?? this.portfolioImages,
+      description: description ?? this.description,
+      openTime: openTime ?? this.openTime,
+      closeTime: closeTime ?? this.closeTime,
     );
   }
 }

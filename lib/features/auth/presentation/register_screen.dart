@@ -312,7 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                             );
                           },
                           child: const Text(
-                            'INICIAR SESIÓN',
+                            'Iniciar sesión',
                             style: TextStyle(
                               color: Color(0xFF7209B7),
                               fontSize: 14,

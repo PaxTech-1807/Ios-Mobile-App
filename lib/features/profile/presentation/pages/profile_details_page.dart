@@ -218,6 +218,339 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
     }
   }
 
+  Future<void> _showEditSocialsDialog() async {
+    if (_profile == null) return;
+
+    final instagramController = TextEditingController(
+      text: _profile!.socials?.additionalProp1 ?? '',
+    );
+    final facebookController = TextEditingController(
+      text: _profile!.socials?.additionalProp2 ?? '',
+    );
+    final otherController = TextEditingController(
+      text: _profile!.socials?.additionalProp3 ?? '',
+    );
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Editar redes sociales',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: instagramController,
+                decoration: InputDecoration(
+                  labelText: 'Instagram',
+                  hintText: '@usuario',
+                  prefixIcon: const Icon(Icons.camera_alt_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: facebookController,
+                decoration: InputDecoration(
+                  labelText: 'Facebook',
+                  hintText: '/pagina',
+                  prefixIcon: const Icon(Icons.facebook),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: otherController,
+                decoration: InputDecoration(
+                  labelText: 'Otra red social',
+                  hintText: 'URL o usuario',
+                  prefixIcon: const Icon(Icons.link),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop({
+                'instagram': instagramController.text.trim(),
+                'facebook': facebookController.text.trim(),
+                'other': otherController.text.trim(),
+              });
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF7209B7),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && _profile != null) {
+      try {
+        // Crear nuevo objeto ProfileSocials
+        final newSocials = ProfileSocials(
+          additionalProp1: result['instagram']!.isEmpty ? null : result['instagram'],
+          additionalProp2: result['facebook']!.isEmpty ? null : result['facebook'],
+          additionalProp3: result['other']!.isEmpty ? null : result['other'],
+        );
+
+        // Actualizar perfil con nuevas redes sociales
+        final updatedProfile = _profile!.copyWith(socials: newSocials);
+        final savedProfile = await _profileService.updateProfile(updatedProfile);
+
+        if (mounted) {
+          setState(() {
+            _profile = savedProfile;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Redes sociales actualizadas exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al actualizar redes sociales: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  String _formatSchedule() {
+    if (_profile?.openTime == null || _profile?.closeTime == null) {
+      return 'No configurado';
+    }
+    return '${_profile!.openTime} — ${_profile!.closeTime}';
+  }
+
+  Future<void> _showEditDescriptionDialog() async {
+    if (_profile == null) return;
+
+    final descriptionController = TextEditingController(
+      text: _profile!.description ?? '',
+    );
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Editar descripción',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: TextField(
+            controller: descriptionController,
+            decoration: InputDecoration(
+              labelText: 'Descripción',
+              hintText: 'Describe tu negocio...',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            maxLines: 5,
+            autofocus: true,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop(descriptionController.text.trim());
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF7209B7),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && _profile != null) {
+      try {
+        final updatedProfile = _profile!.copyWith(description: result.isEmpty ? null : result);
+        final savedProfile = await _profileService.updateProfile(updatedProfile);
+
+        if (mounted) {
+          setState(() {
+            _profile = savedProfile;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Descripción actualizada exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al actualizar descripción: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showEditScheduleDialog() async {
+    if (_profile == null) return;
+
+    final openTimeController = TextEditingController(
+      text: _profile!.openTime ?? '',
+    );
+    final closeTimeController = TextEditingController(
+      text: _profile!.closeTime ?? '',
+    );
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Editar horarios',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: openTimeController,
+                decoration: InputDecoration(
+                  labelText: 'Hora de apertura',
+                  hintText: 'Ej: 09:00 am',
+                  prefixIcon: const Icon(Icons.access_time),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: closeTimeController,
+                decoration: InputDecoration(
+                  labelText: 'Hora de cierre',
+                  hintText: 'Ej: 08:00 pm',
+                  prefixIcon: const Icon(Icons.access_time),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop({
+                'openTime': openTimeController.text.trim(),
+                'closeTime': closeTimeController.text.trim(),
+              });
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF7209B7),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && _profile != null) {
+      try {
+        final updatedProfile = _profile!.copyWith(
+          openTime: result['openTime']!.isEmpty ? null : result['openTime'],
+          closeTime: result['closeTime']!.isEmpty ? null : result['closeTime'],
+        );
+        final savedProfile = await _profileService.updateProfile(updatedProfile);
+
+        if (mounted) {
+          setState(() {
+            _profile = savedProfile;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Horarios actualizados exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al actualizar horarios: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   String _getInitials(String? name) {
     if (name == null || name.isEmpty) return '?';
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -232,20 +565,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: Colors.grey.shade50,
-        appBar: AppBar(
-          title: const Text('Perfil del negocio'),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF7209B7),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -259,17 +578,20 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _ProfileIdentityCard(
-              companyName: _companyName,
-              profile: _profile,
-              getInitials: _getInitials,
-              onImageTap: _uploadProfileImage,
-            ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _ProfileIdentityCard(
+                  companyName: _companyName,
+                  profile: _profile,
+                  getInitials: _getInitials,
+                  onImageTap: _uploadProfileImage,
+                  isLoading: _isLoading,
+                ),
             const SizedBox(height: 20),
             _InfoSectionCard(
               title: 'Información del negocio',
@@ -277,58 +599,150 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                 _InfoRow(
                   icon: Icons.store_mall_directory_outlined,
                   label: 'Nombre de empresa',
-                  value: _companyName ?? 'Mi Salón',
+                  value: _companyName ?? 'Mi salón',
                 ),
                 const SizedBox(height: 16),
                 _InfoRow(
-                  icon: Icons.phone_outlined,
-                  label: 'Número de celular',
-                  value: '+51 987654321',
+                  icon: Icons.email_outlined,
+                  label: 'Correo electrónico',
+                  value: _profile?.email ?? 'No configurado',
                 ),
               ],
             ),
             const SizedBox(height: 16),
             _InfoSectionCard(
               title: 'Sobre nosotros',
+              trailing: GestureDetector(
+                onTap: () => _showEditDescriptionDialog(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF7209B7),
+                        Color(0xFF9D4EDD),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7209B7).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.edit,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
               children: [
                 _InfoRow(
                   label: 'Descripción',
-                  value: 'Somos especialistas en cortes y tratamientos capilares personalizados para cada estilo.',
+                  value: _profile?.description?.isNotEmpty ?? false
+                      ? _profile!.description!
+                      : 'No configurado',
                 ),
               ],
             ),
             const SizedBox(height: 16),
             _InfoSectionCard(
               title: 'Horarios',
+              trailing: GestureDetector(
+                onTap: () => _showEditScheduleDialog(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF7209B7),
+                        Color(0xFF9D4EDD),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7209B7).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.edit,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
               children: [
                 _InfoRow(
                   icon: Icons.schedule_outlined,
-                  label: 'Lun - Sáb',
-                  value: '09:00 am — 08:00 pm',
-                ),
-                const SizedBox(height: 16),
-                _InfoRow(
-                  icon: Icons.schedule,
-                  label: 'Dom',
-                  value: '10:00 am — 04:00 pm',
+                  label: 'Horario',
+                  value: _formatSchedule(),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             _InfoSectionCard(
               title: 'Redes sociales',
+              trailing: GestureDetector(
+                onTap: () => _showEditSocialsDialog(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF7209B7),
+                        Color(0xFF9D4EDD),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7209B7).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.edit,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
               children: [
                 _InfoRow(
                   icon: Icons.camera_alt_outlined,
                   label: 'Instagram',
-                  value: '@glowgo',
+                  value: _profile?.socials?.additionalProp1 ?? 'No configurado',
                 ),
                 const SizedBox(height: 16),
                 _InfoRow(
                   icon: Icons.facebook,
                   label: 'Facebook',
-                  value: '/glowgo',
+                  value: _profile?.socials?.additionalProp2 ?? 'No configurado',
                 ),
+                if (_profile?.socials?.additionalProp3 != null &&
+                    _profile!.socials!.additionalProp3!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _InfoRow(
+                    icon: Icons.link,
+                    label: 'Otra red social',
+                    value: _profile!.socials!.additionalProp3!,
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 20),
@@ -390,6 +804,17 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
           ],
         ),
       ),
+          if (_isLoading)
+            Container(
+              color: Colors.white.withOpacity(0.8),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF7209B7),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -400,12 +825,14 @@ class _ProfileIdentityCard extends StatelessWidget {
     required this.profile,
     required this.getInitials,
     required this.onImageTap,
+    this.isLoading = false,
   });
 
   final String? companyName;
   final ProviderProfile? profile;
   final String Function(String?) getInitials;
   final VoidCallback onImageTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +930,7 @@ class _ProfileIdentityCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  companyName ?? 'Mi Salón',
+                  companyName ?? 'Mi salón',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

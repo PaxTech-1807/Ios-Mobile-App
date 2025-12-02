@@ -189,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     
                     // Title Section
                     const Text(
-                      'Iniciar Sesión',
+                      'Iniciar sesión',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -322,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                     ),
                                   )
                                 : const Text(
-                                    'Iniciar Sesión',
+                                    'Iniciar sesión',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -355,7 +355,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             );
                           },
                           child: const Text(
-                            'REGÍSTRATE',
+                            'Regístrate',
                             style: TextStyle(
                               color: Color(0xFF7209B7),
                               fontSize: 14,

@@ -32,7 +32,7 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
   void initState() {
     super.initState();
     _loadCompanyName();
-    // No cargar perfil automáticamente, solo con pull-to-refresh
+    _loadProfile(); // Cargar perfil automáticamente al iniciar
   }
   
   Future<void> _refreshData() async {
@@ -428,7 +428,7 @@ class _ProfileSummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  companyName ?? 'Mi Salón',
+                  companyName ?? 'Mi salón',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

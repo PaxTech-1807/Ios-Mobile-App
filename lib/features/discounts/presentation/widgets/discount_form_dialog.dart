@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/discount.dart';
 import '../../../../core/services/onboarding_service.dart';
+import '../../../profile/data/providerProfile_service.dart';
 
 class DiscountFormDialog extends StatefulWidget {
   const DiscountFormDialog({super.key, this.discount});
@@ -35,10 +36,36 @@ class _DiscountFormDialogState extends State<DiscountFormDialog> {
   }
 
   Future<void> _loadProviderProfileId() async {
-    final providerId = await _onboardingService.getProviderId();
-    setState(() {
-      _providerProfileId = providerId;
-    });
+    try {
+      // Usar la misma lógica que DiscountsService para obtener el providerProfileId
+      // Obtener providerId primero
+      final onboardingService = OnboardingService();
+      final providerId = await onboardingService.getProviderId();
+      if (providerId == null) {
+        throw Exception(
+          'Provider ID no encontrado. Por favor inicia sesión nuevamente.',
+        );
+      }
+      
+      // Buscar el ProviderProfile que tiene este providerId
+      final profileService = ProviderprofileService();
+      final profile = await profileService.getCurrentProfile();
+      
+      if (profile.id == null) {
+        throw Exception(
+          'El ProviderProfile no tiene un ID válido. Por favor contacta al soporte.',
+        );
+      }
+      
+      if (mounted) {
+        setState(() {
+          _providerProfileId = profile.id;
+        });
+      }
+    } catch (e) {
+      print('❌ [DiscountFormDialog] Error obteniendo providerProfileId: $e');
+      // No actualizar el estado si hay error, pero dejar que el usuario vea el error
+    }
   }
 
   @override

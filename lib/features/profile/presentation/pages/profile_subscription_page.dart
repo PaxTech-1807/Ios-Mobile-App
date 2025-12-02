@@ -60,7 +60,7 @@ class ProfileSubscriptionPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
-                          'Plan Actual',
+                          'Plan actual',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,

@@ -35,22 +35,34 @@ class DiscountsService {
     return headers;
   }
 
+  /// Obtiene el providerProfileId buscando el ProviderProfile que corresponde al providerId actual
   Future<int> _getProviderProfileId() async {
-    final providerId = await _onboardingService.getProviderId();
-    if (providerId == null) {
-      throw Exception(
-        'Provider ID no encontrado. Por favor inicia sesión nuevamente.',
-      );
-    }
-    
-    // Obtener el providerProfileId desde el perfil
     try {
+      print('🔍 [DiscountsService] Obteniendo providerId...');
+      final providerId = await _onboardingService.getProviderId();
+      if (providerId == null) {
+        throw Exception(
+          'Provider ID no encontrado. Por favor inicia sesión nuevamente.',
+        );
+      }
+      print('✅ [DiscountsService] ProviderId obtenido: $providerId');
+      
+      // Buscar el ProviderProfile que tiene este providerId
+      print('🔍 [DiscountsService] Buscando ProviderProfile con providerId: $providerId');
       final profileService = ProviderprofileService();
       final profile = await profileService.getCurrentProfile();
-      return profile.id;
+      
+      if (profile.id == null) {
+        throw Exception(
+          'El ProviderProfile no tiene un ID válido. Por favor contacta al soporte.',
+        );
+      }
+      
+      print('✅ [DiscountsService] ProviderProfile encontrado: id=${profile.id}, providerId=${profile.providerId}');
+      return profile.id!;
     } catch (e) {
-      // Si falla, usar el providerId como fallback
-      return providerId;
+      print('❌ [DiscountsService] Error obteniendo providerProfileId: $e');
+      rethrow;
     }
   }
 
@@ -72,7 +84,8 @@ class DiscountsService {
       print('📋 [DiscountsService] Headers obtenidos: ${headers.keys.toList()}');
       print('📋 [DiscountsService] Authorization header presente: ${headers.containsKey(HttpHeaders.authorizationHeader)}');
       
-      final uri = Uri.parse('$_baseUrl/providerProfile/$providerProfileId');
+      // El endpoint correcto es /api/v1/discounts/provider-profile/{providerProfileId}
+      final uri = Uri.parse('$_baseUrl/provider-profile/$providerProfileId');
       print('🌐 [DiscountsService] URL completa: $uri');
       
       print('📤 [DiscountsService] Enviando petición GET...');
