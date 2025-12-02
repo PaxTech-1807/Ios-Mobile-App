@@ -41,6 +41,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  calendar_day_view:
+    dependency: "direct main"
+    description:
+      name: calendar_day_view
+      sha256: "2410056de8b964f0cb7b42ac2a9e62141fa7552b6c21629bb174a18b517b1285"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.2"
   characters:
     dependency: transitive
     description:

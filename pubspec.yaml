@@ -15,6 +15,7 @@ dependencies:
   intl_phone_field: ^3.2.0
   equatable: ^2.0.5
   intl: ^0.19.0
+  calendar_day_view: ^4.0.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
