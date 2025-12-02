@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/services/onboarding_service.dart';
 import '../../../auth/presentation/login_screen.dart';
+import '../../../discounts/presentation/discounts_page.dart';
 import '../../data/geocoding_service.dart';
 import '../../data/providerProfile_service.dart';
 import '../../domain/providerProfile.dart';
@@ -31,7 +32,12 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
   void initState() {
     super.initState();
     _loadCompanyName();
-    _loadProfile();
+    // No cargar perfil automáticamente, solo con pull-to-refresh
+  }
+  
+  Future<void> _refreshData() async {
+    await _loadCompanyName();
+    await _loadProfile();
   }
 
   Future<void> _loadCompanyName() async {
@@ -168,9 +174,13 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
         backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
+        child: RefreshIndicator(
+          onRefresh: _refreshData,
+          color: const Color(0xFF7209B7),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Profile Summary Card (más compacta)
@@ -220,7 +230,7 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
                         Text(
                           'Estado: ${_isOpen ? 'Abierto' : 'Cerrado'}',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey.shade800,
                           ),
@@ -237,12 +247,12 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
               const Text(
                 'Configuración',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               
               ProfileMenuItem(
                 icon: Icons.store_mall_directory_outlined,
@@ -277,12 +287,23 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
                   );
                 },
               ),
+              ProfileMenuItem(
+                icon: Icons.local_offer_outlined,
+                title: 'Cupones de descuento',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const DiscountsPage(),
+                    ),
+                  );
+                },
+              ),
               
               const SizedBox(height: 32),
               
               // Logout Button
               Container(
-                height: 56,
+                height: 48,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
@@ -292,12 +313,12 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
                       Color(0xFF9D4EDD),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF7209B7).withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -305,18 +326,18 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () => _handleLogout(context),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     child: const Center(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.logout, color: Colors.white, size: 20),
-                          SizedBox(width: 12),
+                          Icon(Icons.logout, color: Colors.white, size: 18),
+                          SizedBox(width: 10),
                           Text(
                             'Cerrar sesión',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
@@ -331,6 +352,7 @@ class _ProfileOverviewPageState extends State<ProfileOverviewPage> {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -351,29 +373,15 @@ class _ProfileSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF7209B7),
-            Color(0xFF9D4EDD),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7209B7).withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, 4),
-            spreadRadius: -2,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -381,14 +389,14 @@ class _ProfileSummaryCard extends StatelessWidget {
         children: [
           // Avatar
           Container(
-            width: 56,
-            height: 56,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFF7209B7).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 2,
+                color: const Color(0xFF7209B7).withOpacity(0.2),
+                width: 1.5,
               ),
               image: profile?.profileImageUrl != null &&
                       profile!.profileImageUrl != 'to Choose' &&
@@ -406,15 +414,15 @@ class _ProfileSummaryCard extends StatelessWidget {
                     child: Text(
                       getInitials(companyName),
                       style: const TextStyle(
-                        fontSize: 22,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Color(0xFF7209B7),
                       ),
                     ),
                   )
                 : null,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,9 +430,9 @@ class _ProfileSummaryCard extends StatelessWidget {
                 Text(
                   companyName ?? 'Mi Salón',
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Colors.black87,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -434,8 +442,8 @@ class _ProfileSummaryCard extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.location_on,
-                      size: 14,
-                      color: Colors.white.withOpacity(0.9),
+                      size: 12,
+                      color: Colors.grey.shade600,
                     ),
                     const SizedBox(width: 4),
                     Flexible(
@@ -445,8 +453,8 @@ class _ProfileSummaryCard extends StatelessWidget {
                                 ? profile!.location
                                 : 'Ubicación no configurada'),
                         style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,

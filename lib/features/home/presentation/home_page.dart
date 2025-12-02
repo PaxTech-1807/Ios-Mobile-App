@@ -196,31 +196,17 @@ class _HomePageContent extends StatelessWidget {
               children: [
               const SizedBox(height: 16),
               
-              // Header morado flotante
+              // Header blanco flotante
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF7209B7),
-                      Color(0xFF9D4EDD),
-                    ],
-                  ),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF7209B7).withOpacity(0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                      spreadRadius: 0,
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 10,
-                      offset: const Offset(0, 4),
-                      spreadRadius: -2,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -230,10 +216,10 @@ class _HomePageContent extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: const Color(0xFF7209B7).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
+                          color: const Color(0xFF7209B7).withOpacity(0.2),
                           width: 1.5,
                         ),
                         image: profile?.profileImageUrl != null &&
@@ -254,7 +240,7 @@ class _HomePageContent extends StatelessWidget {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: Color(0xFF7209B7),
                                 ),
                               ),
                             )
@@ -271,7 +257,7 @@ class _HomePageContent extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Colors.black87,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -282,7 +268,7 @@ class _HomePageContent extends StatelessWidget {
                               Icon(
                                 Icons.location_on,
                                 size: 14,
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.grey.shade600,
                               ),
                               const SizedBox(width: 4),
                               Flexible(
@@ -293,7 +279,7 @@ class _HomePageContent extends StatelessWidget {
                                           : 'Ubicación no configurada'),
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.grey.shade700,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,

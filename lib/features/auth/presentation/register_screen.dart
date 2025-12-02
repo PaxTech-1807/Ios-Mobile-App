@@ -155,24 +155,17 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                     
                     const SizedBox(height: 24),
                     
-                    // Purple Banner Card with Shadow
+                    // Info Banner Card (white with shadow, different from button)
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF7209B7),
-                            Color(0xFF9D4EDD),
-                          ],
-                        ),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF7209B7).withOpacity(0.4),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
@@ -181,12 +174,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: const Color(0xFF7209B7).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
                               Icons.auto_awesome,
-                              color: Colors.white,
+                              color: Color(0xFF7209B7),
                               size: 18,
                             ),
                           ),
@@ -195,7 +188,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                             child: Text(
                               'Crea tu cuenta y comienza a gestionar tu salón de belleza de forma profesional',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Colors.grey.shade800,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 height: 1.3,
@@ -324,13 +317,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                               color: Color(0xFF7209B7),
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
-                              decorationThickness: 2,
                             ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 40), // Espacio extra al final para evitar overflow
                   ],
                 ),
               ),

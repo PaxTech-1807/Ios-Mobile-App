@@ -24,18 +24,60 @@ class AuthService {
       'password': password,
     });
 
-    final response = await _client.post(uri, headers: _headers, body: body);
+    print('📝 [AuthService] Intentando registrar usuario...');
+    print('📧 [AuthService] Email: $email');
+    print('🌐 [AuthService] URL: $uri');
 
-    if (response.statusCode == HttpStatus.ok ||
-        response.statusCode == HttpStatus.created) {
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-      return SignUpResponse.fromJson(decoded);
+    try {
+      final response = await _client.post(uri, headers: _headers, body: body);
+
+      print('📊 [AuthService] Status Code: ${response.statusCode}');
+      print('📄 [AuthService] Response Body: ${response.body}');
+
+      if (response.statusCode == HttpStatus.ok ||
+          response.statusCode == HttpStatus.created) {
+        try {
+          final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+          print('✅ [AuthService] Registro exitoso');
+          return SignUpResponse.fromJson(decoded);
+        } catch (e) {
+          print('❌ [AuthService] Error parseando respuesta: $e');
+          throw Exception(
+            'Error al procesar la respuesta del servidor. El servidor respondió con código ${response.statusCode}, pero la respuesta no es válida: ${response.body}',
+          );
+        }
+      }
+
+      // Intentar obtener el mensaje de error del servidor
+      String errorMessage = 'Error desconocido';
+      try {
+        final errorBody = jsonDecode(response.body);
+        if (errorBody is Map<String, dynamic>) {
+          errorMessage = errorBody['message'] ?? 
+                        errorBody['error'] ?? 
+                        errorBody['title'] ?? 
+                        response.body;
+        } else {
+          errorMessage = response.body;
+        }
+      } catch (e) {
+        errorMessage = response.body.isNotEmpty 
+            ? response.body 
+            : 'Error ${response.statusCode}: ${_getStatusMessage(response.statusCode)}';
+      }
+
+      print('❌ [AuthService] Error del servidor: $errorMessage');
+      
+      throw Exception(
+        'Error al registrarse (${response.statusCode}): $errorMessage',
+      );
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      print('💥 [AuthService] Excepción no esperada: $e');
+      throw Exception('Error de conexión: $e');
     }
-
-    throw HttpException(
-      'Failed to sign up. Status code: ${response.statusCode}',
-      uri: uri,
-    );
   }
 
   // Sign In - Iniciar sesión
@@ -49,17 +91,80 @@ class AuthService {
       'password': password,
     });
 
-    final response = await _client.post(uri, headers: _headers, body: body);
+    print('🔐 [AuthService] Intentando iniciar sesión...');
+    print('📧 [AuthService] Email: $email');
+    print('🌐 [AuthService] URL: $uri');
+    print('📝 [AuthService] Headers: $_headers');
+    print('📦 [AuthService] Body: $body');
 
-    if (response.statusCode == HttpStatus.ok) {
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-      return SignInResponse.fromJson(decoded);
+    try {
+      final response = await _client.post(uri, headers: _headers, body: body);
+
+      print('📊 [AuthService] Status Code: ${response.statusCode}');
+      print('📄 [AuthService] Response Body: ${response.body}');
+      print('📋 [AuthService] Response Headers: ${response.headers}');
+
+      if (response.statusCode == HttpStatus.ok) {
+        try {
+          final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+          print('✅ [AuthService] Login exitoso');
+          return SignInResponse.fromJson(decoded);
+        } catch (e) {
+          print('❌ [AuthService] Error parseando respuesta: $e');
+          throw Exception(
+            'Error al procesar la respuesta del servidor. El servidor respondió con código ${response.statusCode}, pero la respuesta no es válida: ${response.body}',
+          );
+        }
+      }
+
+      // Intentar obtener el mensaje de error del servidor
+      String errorMessage = 'Error desconocido';
+      try {
+        final errorBody = jsonDecode(response.body);
+        if (errorBody is Map<String, dynamic>) {
+          errorMessage = errorBody['message'] ?? 
+                        errorBody['error'] ?? 
+                        errorBody['title'] ?? 
+                        response.body;
+        } else {
+          errorMessage = response.body;
+        }
+      } catch (e) {
+        // Si no se puede parsear, usar el body directamente
+        errorMessage = response.body.isNotEmpty 
+            ? response.body 
+            : 'Error ${response.statusCode}: ${_getStatusMessage(response.statusCode)}';
+      }
+
+      print('❌ [AuthService] Error del servidor: $errorMessage');
+      
+      throw Exception(
+        'Error al iniciar sesión (${response.statusCode}): $errorMessage',
+      );
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      print('💥 [AuthService] Excepción no esperada: $e');
+      throw Exception('Error de conexión: $e');
     }
+  }
 
-    throw HttpException(
-      'Failed to sign in. Status code: ${response.statusCode}',
-      uri: uri,
-    );
+  String _getStatusMessage(int statusCode) {
+    switch (statusCode) {
+      case 400:
+        return 'Solicitud inválida';
+      case 401:
+        return 'Credenciales incorrectas';
+      case 403:
+        return 'Acceso denegado';
+      case 404:
+        return 'Endpoint no encontrado';
+      case 500:
+        return 'Error interno del servidor';
+      default:
+        return 'Error desconocido';
+    }
   }
 
   // Crear Provider

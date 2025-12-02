@@ -93,10 +93,23 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       );
     } catch (e) {
       if (!mounted) return;
+      
+      print('💥 [LoginScreen] Error capturado: $e');
+      print('💥 [LoginScreen] Tipo de error: ${e.runtimeType}');
+      
+      // Extraer el mensaje de error real
+      String errorMessage = 'Error al iniciar sesión';
+      if (e is Exception) {
+        errorMessage = e.toString().replaceAll('Exception: ', '');
+      } else {
+        errorMessage = e.toString();
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al iniciar sesión: ${e.toString()}'),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
       setState(() {
@@ -125,14 +138,22 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
                     // Logo/Icon Section
                     Center(
                       child: Container(
@@ -193,24 +214,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     
                     const SizedBox(height: 24),
                     
-                    // Purple Banner Card with Shadow
+                    // Info Banner Card (white with shadow, different from button)
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF7209B7),
-                            Color(0xFF9D4EDD),
-                          ],
-                        ),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF7209B7).withOpacity(0.4),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
@@ -219,12 +233,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: const Color(0xFF7209B7).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
                               Icons.spa_outlined,
-                              color: Colors.white,
+                              color: Color(0xFF7209B7),
                               size: 18,
                             ),
                           ),
@@ -233,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             child: Text(
                               'Gestiona tu salón: servicios, calendario y trabajadores en tiempo real',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Colors.grey.shade800,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 height: 1.3,
@@ -346,16 +360,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               color: Color(0xFF7209B7),
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
-                              decorationThickness: 2,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
+                    const SizedBox(height: 40), // Espacio extra al final para evitar overflow
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),

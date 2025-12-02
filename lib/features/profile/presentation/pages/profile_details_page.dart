@@ -5,7 +5,7 @@ import '../../../../core/services/onboarding_service.dart';
 import '../../data/geocoding_service.dart';
 import '../../data/providerProfile_service.dart';
 import '../../domain/providerProfile.dart';
-import '../widgets/location_search_dialog.dart';
+import 'location_edit_page.dart';
 
 class ProfileDetailsPage extends StatefulWidget {
   const ProfileDetailsPage({super.key});
@@ -144,22 +144,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
     }
   }
 
-  Future<void> _showEditLocationDialog() async {
-    print('📍 [ProfileDetailsPage] Abriendo diálogo de ubicación');
-    
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => LocationSearchDialog(
-        initialLocation: _profile?.location,
-      ),
-    );
-
-    print('📍 [ProfileDetailsPage] Resultado del diálogo: $result');
-
-    if (result != null && result.isNotEmpty && result != _profile?.location) {
-      await _updateLocation(result);
-    }
-  }
 
   Future<void> _uploadProfileImage() async {
     if (_profile == null) return;
@@ -274,21 +258,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         ),
         elevation: 0,
         backgroundColor: Colors.transparent,
-        actions: [
-          TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF7209B7),
-            ),
-            child: const Text(
-              'Editar',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -365,13 +334,48 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
             const SizedBox(height: 20),
             _InfoSectionCard(
               title: 'Ubicación',
-              trailing: IconButton(
-                icon: const Icon(
-                  Icons.edit,
-                  color: Color(0xFF7209B7),
-                  size: 20,
+              trailing: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF7209B7),
+                      Color(0xFF9D4EDD),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF7209B7).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                onPressed: _showEditLocationDialog,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const LocationEditPage(),
+                        ),
+                      ).then((_) {
+                        // Recargar perfil después de editar
+                        _loadProfile();
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(18),
+                    child: const Icon(
+                      Icons.edit,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
               ),
               children: [
                 _InfoRow(
