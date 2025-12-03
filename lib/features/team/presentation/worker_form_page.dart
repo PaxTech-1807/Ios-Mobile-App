@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:iosmobileapp/core/services/onboarding_service.dart';
 import 'package:iosmobileapp/features/auth/data/auth_service.dart';
+import 'package:iosmobileapp/features/team/data/team_service.dart';
 import 'package:iosmobileapp/features/team/domain/worker.dart';
 import 'package:iosmobileapp/features/team/presentation/blocs/workers_bloc.dart';
 import 'package:iosmobileapp/features/team/presentation/blocs/workers_event.dart';
@@ -21,7 +25,6 @@ class WorkerFormPage extends StatefulWidget {
 class _WorkerFormPageState extends State<WorkerFormPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  late final TextEditingController _photoUrlController;
   
   final List<String> _availableSpecializations = [
     'Todos los servicios',
@@ -40,17 +43,16 @@ class _WorkerFormPageState extends State<WorkerFormPage> {
   final Set<String> _selectedSpecializations = {};
   int? _providerId;
   bool _isLoadingProviderId = true;
+  XFile? _selectedImage;
   final _onboardingService = OnboardingService();
   final _authService = AuthService();
+  final _teamService = TeamService();
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(
       text: widget.initialWorker?.name ?? '',
-    );
-    _photoUrlController = TextEditingController(
-      text: widget.initialWorker?.photoUrl ?? '',
     );
     
     // Inicializar especializaciones seleccionadas
@@ -111,7 +113,6 @@ class _WorkerFormPageState extends State<WorkerFormPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _photoUrlController.dispose();
     super.dispose();
   }
 
@@ -149,11 +150,78 @@ class _WorkerFormPageState extends State<WorkerFormPage> {
     return BlocListener<WorkersBloc, WorkersState>(
       listenWhen: (previous, current) =>
           previous.formStatus != current.formStatus,
-      listener: (context, state) {
+      listener: (context, state) async {
         switch (state.formStatus) {
           case WorkerFormStatus.success:
+            // Si hay una imagen seleccionada, subirla
+            if (_selectedImage != null) {
+              try {
+                // Buscar el worker recién creado/actualizado en el estado
+                Worker? targetWorker;
+                
+                if (widget.isEditing) {
+                  // Al editar, buscar por ID
+                  targetWorker = state.workers.firstWhere(
+                    (w) => w.id == widget.initialWorker!.id,
+                    orElse: () => widget.initialWorker!,
+                  );
+                } else {
+                  // Al crear, buscar el worker más reciente con el mismo nombre
+                  final matchingWorkers = state.workers
+                      .where((w) => w.name == _nameController.text.trim())
+                      .toList();
+                  if (matchingWorkers.isNotEmpty) {
+                    // Ordenar por ID descendente para obtener el más reciente
+                    matchingWorkers.sort((a, b) => b.id.compareTo(a.id));
+                    targetWorker = matchingWorkers.first;
+                  }
+                }
+                
+                if (targetWorker != null) {
+                  // Mostrar loading para subida de imagen
+                  if (mounted) {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF7209B7),
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  await _teamService.uploadWorkerPhoto(
+                    imageFile: _selectedImage!,
+                    workerId: targetWorker.id,
+                  );
+                  
+                  if (mounted) {
+                    Navigator.of(context).pop(); // Cerrar loading
+                    // Recargar workers para mostrar la nueva imagen
+                    context.read<WorkersBloc>().add(const LoadWorkers());
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  // Intentar cerrar loading si está abierto
+                  try {
+                    Navigator.of(context).pop();
+                  } catch (_) {}
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Worker guardado, pero error al subir imagen: ${e.toString()}'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              }
+            }
+            
             context.read<WorkersBloc>().add(const WorkerFormReset());
-            Navigator.of(context).pop(true);
+            if (mounted) {
+              Navigator.of(context).pop(true);
+            }
             break;
           case WorkerFormStatus.failure:
             final errorMessage =
@@ -214,25 +282,7 @@ class _WorkerFormPageState extends State<WorkerFormPage> {
                                     ),
                                   ],
                                 ),
-                                child: _photoUrlController.text.isNotEmpty
-                                    ? ClipOval(
-                                        child: Image.network(
-                                          _photoUrlController.text,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return const Icon(
-                                              Icons.person,
-                                              size: 50,
-                                              color: Colors.white,
-                                            );
-                                          },
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.person,
-                                        size: 50,
-                                        color: Colors.white,
-                                      ),
+                                child: _getAvatarWidget(),
                               ),
                               Positioned(
                                 bottom: 0,
@@ -242,7 +292,7 @@ class _WorkerFormPageState extends State<WorkerFormPage> {
                                   shape: const CircleBorder(),
                                   color: Colors.white,
                                   child: InkWell(
-                                    onTap: _promptPhotoUrl,
+                                    onTap: _pickImage,
                                     customBorder: const CircleBorder(),
                                     child: const Padding(
                                       padding: EdgeInsets.all(8.0),
@@ -331,15 +381,6 @@ class _WorkerFormPageState extends State<WorkerFormPage> {
                               ),
                             ),
                           ),
-                        const SizedBox(height: 24),
-                        
-                        // URL de la foto
-                        _buildTextField(
-                          controller: _photoUrlController,
-                          label: 'URL de la foto (opcional)',
-                          hintText: 'https://',
-                          keyboardType: TextInputType.url,
-                        ),
                         const SizedBox(height: 32),
                         
                         // Botones
@@ -478,15 +519,13 @@ class _WorkerFormPageState extends State<WorkerFormPage> {
     // Unir especializaciones con ", "
     final specialization = _selectedSpecializations.join(', ');
 
-    // Si photoUrl está vacío, usar URL por defecto
-    final photoUrlText = _photoUrlController.text.trim();
+    // Usar URL por defecto para photoUrl (se actualizará después con la imagen subida)
     const defaultPhotoUrl = 'https://example.com';
-    final photoUrl = photoUrlText.isEmpty ? defaultPhotoUrl : photoUrlText;
 
     final request = WorkerRequest(
       name: _nameController.text.trim(),
       specialization: specialization,
-      photoUrl: photoUrl,
+      photoUrl: defaultPhotoUrl,
       providerId: _providerId!,
     );
 
@@ -500,42 +539,102 @@ class _WorkerFormPageState extends State<WorkerFormPage> {
     }
   }
 
-  Future<void> _promptPhotoUrl() async {
-    final controller = TextEditingController(text: _photoUrlController.text);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Actualizar foto'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'URL de la foto',
-            hintText: 'https://',
-            border: OutlineInputBorder(),
-          ),
-          keyboardType: TextInputType.url,
-          autofocus: true,
+  Widget _getAvatarWidget() {
+    // Si hay una imagen seleccionada localmente, mostrarla
+    if (_selectedImage != null) {
+      return ClipOval(
+        child: FutureBuilder<List<int>>(
+          future: _selectedImage!.readAsBytes(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return Image.memory(
+                Uint8List.fromList(snapshot.data!),
+                fit: BoxFit.cover,
+                width: 100,
+                height: 100,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.person,
+                    size: 50,
+                    color: Colors.white,
+                  );
+                },
+              );
+            }
+            if (snapshot.hasError) {
+              return const Icon(
+                Icons.person,
+                size: 50,
+                color: Colors.white,
+              );
+            }
+            return const SizedBox(
+              width: 100,
+              height: 100,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              ),
+            );
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF7209B7),
-            ),
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
+      );
+    }
+    
+    // Si estamos editando y el worker tiene una foto, mostrarla
+    if (widget.initialWorker?.photoUrl.isNotEmpty == true &&
+        widget.initialWorker!.photoUrl != 'https://example.com') {
+      return ClipOval(
+        child: Image.network(
+          widget.initialWorker!.photoUrl,
+          fit: BoxFit.cover,
+          width: 100,
+          height: 100,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(
+              Icons.person,
+              size: 50,
+              color: Colors.white,
+            );
+          },
+        ),
+      );
+    }
+    
+    // Por defecto, mostrar icono
+    return const Icon(
+      Icons.person,
+      size: 50,
+      color: Colors.white,
     );
+  }
 
-    if (result != null) {
-      setState(() {
-        _photoUrlController.text = result;
-      });
+  Future<void> _pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = image;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar imagen: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }
