@@ -23,7 +23,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'   # use latest stable Flutter
+          channel: 'stable'   # latest stable Flutter
           cache: true
 
       - name: Flutter doctor
@@ -32,8 +32,9 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      # Optional: run tests (remove this step if you don't want tests in CI)
-      - name: Run tests
+      # Only run tests if there are any files under test/
+      - name: Run tests (if any)
+        if: ${{ hashFiles('test/**') != '' }}
         run: flutter test
 
       - name: Build release APK
