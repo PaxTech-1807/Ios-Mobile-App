@@ -465,32 +465,12 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
   Future<void> _showEditScheduleDialog() async {
     if (_profile == null) return;
 
-    // Crear lista de horas de 00:00 a 24:00
-    final List<String> hours =
-        List<String>.generate(25, (index) => index.toString().padLeft(2, '0') + ':00');
-
-    // Posiciones iniciales según el perfil actual
-    int initialOpenIndex = 9; // 09:00 por defecto
-    int initialCloseIndex = 20; // 20:00 por defecto
-
-    if (_profile?.openTime != null) {
-      final open = _profile!.openTime!;
-      final hour = int.tryParse(open.split(':').first) ?? 9;
-      if (hour >= 0 && hour <= 24) {
-        initialOpenIndex = hour;
-      }
-    }
-
-    if (_profile?.closeTime != null) {
-      final close = _profile!.closeTime!;
-      final hour = int.tryParse(close.split(':').first) ?? 20;
-      if (hour >= 0 && hour <= 24) {
-        initialCloseIndex = hour;
-      }
-    }
-
-    int selectedOpenIndex = initialOpenIndex;
-    int selectedCloseIndex = initialCloseIndex;
+    final openTimeController = TextEditingController(
+      text: _profile!.openTime ?? '',
+    );
+    final closeTimeController = TextEditingController(
+      text: _profile!.closeTime ?? '',
+    );
 
     final result = await showDialog<Map<String, String>>(
       context: context,
@@ -500,7 +480,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
           borderRadius: BorderRadius.circular(20),
         ),
         titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-        contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         title: const Text(
           'Editar horarios',
@@ -509,145 +489,73 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: SizedBox(
-          height: 220,
+        content: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 8),
               Text(
-                'Selecciona horario de apertura y cierre',
+                'Horario de apertura',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 4),
-                            child: Text(
-                              'Apertura',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: StatefulBuilder(
-                              builder: (context, setInnerState) {
-                                return ListWheelScrollView.useDelegate(
-                                  itemExtent: 36,
-                                  physics: const FixedExtentScrollPhysics(),
-                                  onSelectedItemChanged: (index) {
-                                    setInnerState(() {
-                                      selectedOpenIndex = index;
-                                    });
-                                  },
-                                  controller: FixedExtentScrollController(
-                                    initialItem: initialOpenIndex,
-                                  ),
-                                  childDelegate: ListWheelChildBuilderDelegate(
-                                    builder: (context, index) {
-                                      if (index < 0 || index >= hours.length) {
-                                        return null;
-                                      }
-                                      final isSelected = index == selectedOpenIndex;
-                                      return Center(
-                                        child: AnimatedDefaultTextStyle(
-                                          duration: const Duration(milliseconds: 150),
-                                          style: TextStyle(
-                                            fontSize: isSelected ? 16 : 14,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w600
-                                                : FontWeight.normal,
-                                            color: isSelected
-                                                ? const Color(0xFF7209B7)
-                                                : Colors.grey.shade700,
-                                          ),
-                                          child: Text(hours[index]),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                padding: const EdgeInsets.all(4),
+                child: TextField(
+                  controller: openTimeController,
+                  decoration: InputDecoration(
+                    labelText: 'Hora de apertura',
+                    hintText: '09:00',
+                    prefixIcon: const Icon(Icons.access_time),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 4),
-                            child: Text(
-                              'Cierre',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: StatefulBuilder(
-                              builder: (context, setInnerState) {
-                                return ListWheelScrollView.useDelegate(
-                                  itemExtent: 36,
-                                  physics: const FixedExtentScrollPhysics(),
-                                  onSelectedItemChanged: (index) {
-                                    setInnerState(() {
-                                      selectedCloseIndex = index;
-                                    });
-                                  },
-                                  controller: FixedExtentScrollController(
-                                    initialItem: initialCloseIndex,
-                                  ),
-                                  childDelegate: ListWheelChildBuilderDelegate(
-                                    builder: (context, index) {
-                                      if (index < 0 || index >= hours.length) {
-                                        return null;
-                                      }
-                                      final isSelected = index == selectedCloseIndex;
-                                      return Center(
-                                        child: AnimatedDefaultTextStyle(
-                                          duration: const Duration(milliseconds: 150),
-                                          style: TextStyle(
-                                            fontSize: isSelected ? 16 : 14,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w600
-                                                : FontWeight.normal,
-                                            color: isSelected
-                                                ? const Color(0xFF7209B7)
-                                                : Colors.grey.shade700,
-                                          ),
-                                          child: Text(hours[index]),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  keyboardType: TextInputType.datetime,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Horario de cierre',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: TextField(
+                  controller: closeTimeController,
+                  decoration: InputDecoration(
+                    labelText: 'Hora de cierre',
+                    hintText: '20:00',
+                    prefixIcon: const Icon(Icons.access_time),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
-                  ],
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  keyboardType: TextInputType.datetime,
                 ),
               ),
             ],
@@ -661,14 +569,14 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
           FilledButton(
             onPressed: () {
               Navigator.of(context).pop({
-                'openTime': hours[selectedOpenIndex],
-                'closeTime': hours[selectedCloseIndex],
+                'openTime': openTimeController.text.trim(),
+                'closeTime': closeTimeController.text.trim(),
               });
             },
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF7209B7),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
             child: const Text('Guardar'),
